@@ -319,18 +319,147 @@ pre code { background: none; padding: 0; font-size: inherit; }
   text-align: right;
 }
 
-/* --- GIF PLACEHOLDER --- */
-.gif-placeholder {
+/* --- WORKFLOW ANIMATION --- */
+.wf-box {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 40px 20px;
-  text-align: center;
   margin: 1.2rem 0;
-  color: var(--fg-muted);
-  font-family: var(--font-display);
-  font-size: 0.82rem;
+  overflow: hidden;
 }
+.wf-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.wf-btn {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  color: var(--fg);
+  cursor: pointer;
+}
+.wf-btn:hover { border-color: var(--accent); }
+.wf-btn.wf-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.wf-btn.wf-primary:hover { opacity: 0.9; }
+.wf-stats {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  color: var(--fg-muted);
+}
+.wf-stats .wf-sv { color: var(--fg); font-weight: 600; }
+.wf-canvas {
+  overflow-x: auto;
+  padding: 12px 14px;
+}
+.wf-flow {
+  position: relative;
+  min-width: 720px;
+  height: 280px;
+}
+.wf-node {
+  position: absolute;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  width: 128px;
+  overflow: hidden;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.wf-node.wf-active {
+  border-color: #58a6ff;
+  box-shadow: 0 0 12px rgba(88,166,255,0.15);
+}
+.wf-nh {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+.wf-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.wf-nb {
+  padding: 6px 8px;
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  color: var(--fg-muted);
+  line-height: 1.4;
+}
+.wf-nb .wf-v { color: var(--fg); font-weight: 500; }
+.wf-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+.wf-conn { fill: none; stroke: var(--border); stroke-width: 1.5; }
+.wf-conn.wf-ca { stroke: #58a6ff; filter: drop-shadow(0 0 3px rgba(88,166,255,0.25)); }
+.wf-conn.wf-r-ret.wf-ca { stroke: #f85149; filter: drop-shadow(0 0 3px rgba(248,81,73,0.25)); }
+.wf-conn.wf-r-urg.wf-ca { stroke: #d29922; filter: drop-shadow(0 0 3px rgba(210,153,34,0.25)); }
+.wf-conn.wf-r-gen.wf-ca { stroke: #3fb950; filter: drop-shadow(0 0 3px rgba(63,185,80,0.25)); }
+.wf-pulse { r: 3; opacity: 0; }
+.wf-pulse.wf-p-ret { fill: #f85149; }
+.wf-pulse.wf-p-urg { fill: #d29922; }
+.wf-pulse.wf-p-gen { fill: #3fb950; }
+.wf-pulse.wf-p-def { fill: #58a6ff; }
+.wf-data {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border-top: 1px solid var(--border);
+}
+@media (max-width: 520px) { .wf-data { grid-template-columns: 1fr; } }
+.wf-panel { padding: 10px 14px; }
+.wf-panel + .wf-panel { border-left: 1px solid var(--border); }
+@media (max-width: 520px) { .wf-panel + .wf-panel { border-left: none; border-top: 1px solid var(--border); } }
+.wf-ph {
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--fg-muted);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.wf-pp {
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  line-height: 1.55;
+  color: var(--fg-muted);
+  max-height: 120px;
+  overflow-y: auto;
+}
+.wf-pp pre { margin: 0; white-space: pre-wrap; word-break: break-word; }
+.wf-jk { color: #58a6ff; }
+.wf-js { color: #3fb950; }
+.wf-jn { color: #d29922; }
+.wf-fi {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  font-size: 0.62rem;
+}
+.wf-fi:last-child { border-bottom: none; }
+.wf-ft { color: var(--fg-muted); flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.wf-fl {
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 0.58rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.wf-fl.wf-fret { background: rgba(248,81,73,0.15); color: #f85149; }
+.wf-fl.wf-furg { background: rgba(210,153,34,0.15); color: #d29922; }
+.wf-fl.wf-fgen { background: rgba(63,185,80,0.15); color: #3fb950; }
+.wf-fx { color: var(--fg); }
 
 /* --- INSTALL STEPS --- */
 .step-cards {
@@ -527,9 +656,51 @@ footer a:hover { color: var(--accent); }
   Customer message comes in. Jeffy classifies it against 77 banking intents, then IF nodes route it. Account closure goes to the retention team, lost/stolen cards go to urgent support, everything else hits the general queue. Each path carries the original label and confidence score
 </p>
 
-<div class="gif-placeholder" id="gif-area">
-  <div style="font-size:2rem;margin-bottom:8px">&#9654;</div>
-  GIF coming soon, n8n workflow running end to end
+<div class="wf-box">
+  <div class="wf-controls">
+    <button class="wf-btn wf-primary" id="wf-run">Run workflow</button>
+    <button class="wf-btn" id="wf-auto">Auto-play</button>
+    <span class="wf-stats">Classified: <span class="wf-sv" id="wf-ct">0</span> &middot; Avg: <span class="wf-sv" id="wf-ms">—</span></span>
+  </div>
+  <div class="wf-canvas">
+    <div class="wf-flow" id="wf-flow">
+      <svg class="wf-svg" id="wf-svg"></svg>
+      <div class="wf-node" id="wn-wh" style="left:0;top:100px">
+        <div class="wf-nh"><div class="wf-dot" style="background:#4493f8"></div>Webhook</div>
+        <div class="wf-nb"><span>POST</span> <span class="wf-v">/support</span><br><span id="wn-whs">Listening...</span></div>
+      </div>
+      <div class="wf-node" id="wn-jf" style="left:170px;top:100px">
+        <div class="wf-nh"><div class="wf-dot" style="background:#3fb950"></div>Jeffy</div>
+        <div class="wf-nb"><span>task:</span> <span class="wf-v">banking77</span><br><span id="wn-jfs">Ready</span></div>
+      </div>
+      <div class="wf-node" id="wn-sw" style="left:340px;top:100px">
+        <div class="wf-nh"><div class="wf-dot" style="background:#d29922"></div>Switch</div>
+        <div class="wf-nb"><span>3 routes</span><br><span id="wn-sws">Idle</span></div>
+      </div>
+      <div class="wf-node" id="wn-ret" style="left:530px;top:4px">
+        <div class="wf-nh"><div class="wf-dot" style="background:#f85149"></div>#retention</div>
+        <div class="wf-nb"><span id="wn-retm">—</span></div>
+      </div>
+      <div class="wf-node" id="wn-urg" style="left:530px;top:100px">
+        <div class="wf-nh"><div class="wf-dot" style="background:#d29922"></div>#urgent</div>
+        <div class="wf-nb"><span id="wn-urgm">—</span></div>
+      </div>
+      <div class="wf-node" id="wn-gen" style="left:530px;top:196px">
+        <div class="wf-nh"><div class="wf-dot" style="background:#3fb950"></div>#general</div>
+        <div class="wf-nb"><span id="wn-genm">—</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="wf-data">
+    <div class="wf-panel">
+      <div class="wf-ph"><div class="wf-dot" style="background:#3fb950"></div> Classification</div>
+      <div class="wf-pp"><pre id="wf-json">Waiting for input...</pre></div>
+    </div>
+    <div class="wf-panel">
+      <div class="wf-ph"><div class="wf-dot" style="background:#e0488b"></div> Routing log</div>
+      <div class="wf-pp" id="wf-feed"></div>
+    </div>
+  </div>
 </div>
 
 <h2>Install in 3 steps</h2>
@@ -612,6 +783,140 @@ footer a:hover { color: var(--accent); }
   <a href="https://github.com/nicobrenner/n8n-nodes-jeffy">n8n Node</a>
   <a href="https://github.com/nicobrenner/jeffy">GitHub</a>
 </footer>
+
+<script>
+(function() {
+var WF_MSGS = [
+  { text: "I want to close my account and get my money back", route: "ret", label: "terminate_account", conf: 0.87, ms: 14 },
+  { text: "I think my card has been stolen", route: "urg", label: "lost_or_stolen_card", conf: 0.92, ms: 11 },
+  { text: "How do I set up Apple Pay?", route: "gen", label: "apple_pay_or_google_pay", conf: 0.99, ms: 12 },
+  { text: "Please cancel my account, I'm switching banks", route: "ret", label: "terminate_account", conf: 0.74, ms: 15 },
+  { text: "Someone used my card without permission", route: "urg", label: "compromised_card", conf: 0.93, ms: 10 },
+  { text: "Why was I charged twice for the same transaction?", route: "gen", label: "transaction_charged_twice", conf: 0.99, ms: 12 },
+  { text: "My phone was stolen, freeze everything", route: "urg", label: "lost_or_stolen_phone", conf: 0.91, ms: 11 },
+  { text: "How do I change my PIN?", route: "gen", label: "change_pin", conf: 0.98, ms: 13 },
+  { text: "I'm done with this bank, close my account", route: "ret", label: "terminate_account", conf: 0.89, ms: 13 },
+  { text: "The contactless payment stopped working", route: "gen", label: "contactless_not_working", conf: 0.86, ms: 14 },
+];
+var wIdx = 0, wCount = 0, wMs = 0, wAuto = null, wRunning = false;
+var $ = function(id) { return document.getElementById(id); };
+
+function wfDraw() {
+  var svg = $('wf-svg'), fl = $('wf-flow');
+  var W = fl.offsetWidth, H = fl.offsetHeight;
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  function nc(id, side) {
+    var el = $(id);
+    return [side === 'r' ? el.offsetLeft + el.offsetWidth : el.offsetLeft, el.offsetTop + el.offsetHeight / 2];
+  }
+  var paths = [
+    { id: 'wc0', f: nc('wn-wh','r'), t: nc('wn-jf','l'), c: '' },
+    { id: 'wc1', f: nc('wn-jf','r'), t: nc('wn-sw','l'), c: '' },
+    { id: 'wc2', f: nc('wn-sw','r'), t: nc('wn-ret','l'), c: 'wf-r-ret' },
+    { id: 'wc3', f: nc('wn-sw','r'), t: nc('wn-urg','l'), c: 'wf-r-urg' },
+    { id: 'wc4', f: nc('wn-sw','r'), t: nc('wn-gen','l'), c: 'wf-r-gen' },
+  ];
+  var h = '';
+  for (var i = 0; i < paths.length; i++) {
+    var p = paths[i], x1 = p.f[0], y1 = p.f[1], x2 = p.t[0], y2 = p.t[1];
+    var cx = (x1 + x2) / 2;
+    var d = 'M' + x1 + ',' + y1 + ' C' + cx + ',' + y1 + ' ' + cx + ',' + y2 + ' ' + x2 + ',' + y2;
+    var pc = p.c ? ('wf-p-' + p.c.replace('wf-r-','')) : 'wf-p-def';
+    h += '<path id="' + p.id + '" class="wf-conn ' + p.c + '" d="' + d + '"/>';
+    h += '<circle class="wf-pulse ' + pc + '" id="wp-' + p.id + '"><animateMotion dur="0.35s" fill="freeze" begin="indefinite"><mpath href="#' + p.id + '"/></animateMotion></circle>';
+  }
+  svg.innerHTML = h;
+}
+
+function wfJson(obj) {
+  return JSON.stringify(obj, null, 2)
+    .replace(/"([^"]+)":/g, '<span class="wf-jk">"$1"</span>:')
+    .replace(/: "([^"]+)"/g, ': <span class="wf-js">"$1"</span>')
+    .replace(/: (\d+\.?\d*)/g, ': <span class="wf-jn">$1</span>');
+}
+
+function wfFeed(msg) {
+  var fd = $('wf-feed');
+  var t = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  var cls = { ret: 'wf-fret', urg: 'wf-furg', gen: 'wf-fgen' }[msg.route];
+  var lbl = { ret: 'retention', urg: 'urgent', gen: 'general' }[msg.route];
+  var div = document.createElement('div');
+  div.className = 'wf-fi';
+  div.innerHTML = '<span class="wf-ft">' + t + '</span><span class="wf-fl ' + cls + '">' + lbl + '</span><span class="wf-fx">' + msg.label + '</span>';
+  fd.prepend(div);
+  while (fd.children.length > 6) fd.lastChild.remove();
+}
+
+function wfStep(nid, cid, dur) {
+  return new Promise(function(resolve) {
+    $(nid).classList.add('wf-active');
+    if (cid) {
+      $(cid).classList.add('wf-ca');
+      var pulse = $('wp-' + cid);
+      pulse.style.opacity = 1;
+      pulse.querySelector('animateMotion').beginElement();
+      setTimeout(function() { pulse.style.opacity = 0; }, dur - 40);
+    }
+    setTimeout(resolve, dur);
+  });
+}
+
+function wfClear() {
+  var nodes = document.querySelectorAll('.wf-node.wf-active');
+  for (var i = 0; i < nodes.length; i++) nodes[i].classList.remove('wf-active');
+  var conns = document.querySelectorAll('.wf-conn.wf-ca');
+  for (var j = 0; j < conns.length; j++) conns[j].classList.remove('wf-ca');
+}
+
+async function wfRun() {
+  if (wRunning) return;
+  wRunning = true;
+  var msg = WF_MSGS[wIdx % WF_MSGS.length];
+  wIdx++;
+  wfClear();
+
+  $('wn-whs').innerHTML = '<span class="wf-v">Received</span>';
+  await wfStep('wn-wh', null, 180);
+  await wfStep('wn-wh', 'wc0', 350);
+
+  $('wn-jfs').textContent = 'Classifying...';
+  await wfStep('wn-jf', null, 250);
+  $('wn-jfs').innerHTML = '<span class="wf-v">' + msg.label + '</span>';
+  $('wf-json').innerHTML = wfJson({ label: msg.label, confidence: msg.conf, latency_ms: msg.ms, task: 'banking77' });
+  await wfStep('wn-jf', 'wc1', 350);
+
+  var rn = { ret: 'retention', urg: 'urgent', gen: 'general' }[msg.route];
+  $('wn-sws').innerHTML = '→ <span class="wf-v">' + rn + '</span>';
+  var rc = { ret: 'wc2', urg: 'wc3', gen: 'wc4' }[msg.route];
+  await wfStep('wn-sw', rc, 350);
+
+  var sn = { ret: 'wn-ret', urg: 'wn-urg', gen: 'wn-gen' }[msg.route];
+  var sm = { ret: 'wn-retm', urg: 'wn-urgm', gen: 'wn-genm' }[msg.route];
+  $(sm).innerHTML = '<span class="wf-v">' + msg.text.slice(0, 30) + '...</span>';
+  await wfStep(sn, null, 250);
+
+  wfFeed(msg);
+  wCount++; wMs += msg.ms;
+  $('wf-ct').textContent = wCount;
+  $('wf-ms').textContent = (wMs / wCount).toFixed(1) + 'ms';
+
+  setTimeout(function() {
+    wfClear();
+    $('wn-whs').textContent = 'Listening...';
+    wRunning = false;
+  }, 350);
+}
+
+$('wf-run').addEventListener('click', wfRun);
+$('wf-auto').addEventListener('click', function() {
+  if (wAuto) { clearInterval(wAuto); wAuto = null; $('wf-auto').textContent = 'Auto-play'; }
+  else { wfRun(); wAuto = setInterval(wfRun, 2000); $('wf-auto').textContent = 'Stop'; }
+});
+wfDraw();
+window.addEventListener('resize', wfDraw);
+setTimeout(wfRun, 500);
+})();
+</script>
 
 <script>
 var SAMPLES = [
