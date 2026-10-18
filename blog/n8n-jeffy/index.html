@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Jeffy + n8n: Free Text Classification for Your Workflows</title>
+<meta name="description" content="Add deterministic text classification to n8n with Jeffy. Free, self-hosted, 15ms per classification. No LLM, no API key. Install the community node and start routing.">
+<link rel="icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:title" content="Jeffy + n8n: Free Text Classification for Workflows">
+<meta property="og:description" content="Replace unreliable LLM-based classification in n8n. 15ms, deterministic, 70 pretrained tasks. Free community node.">
+<meta property="og:url" content="https://jeffyclassify.com/blog/n8n-jeffy/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Jeffy">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Jeffy + n8n: Free Text Classification for Workflows">
+<meta name="twitter:description" content="Replace unreliable LLM-based classification in n8n. 15ms, deterministic, 70 pretrained tasks. Free community node.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+:root {
+  --bg: #0a0a0c;
+  --fg: #e0dfd8;
+  --fg-muted: #8a8880;
+  --surface: #141418;
+  --surface-raised: #1c1c22;
+  --border: #2a2a30;
+  --accent: #ff6d3a;
+  --accent-dim: #c44e20;
+  --accent-glow: rgba(255,109,58,0.12);
+  --n8n-green: #20d49a;
+  --n8n-green-dim: #178c68;
+  --good: #4ade80;
+  --warn: #facc15;
+  --bad: #f87171;
+  --font-display: 'IBM Plex Mono', monospace;
+  --font-body: 'Source Sans 3', -apple-system, sans-serif;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  line-height: 1.65;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+h1 {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--accent);
+  margin: 2.5rem 0 0.3rem;
+  text-wrap: balance;
+}
+
+.dateline {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  color: var(--fg-muted);
+  margin-bottom: 1.5rem;
+}
+
+h2 {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--fg);
+  margin: 2.2rem 0 0.8rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+p { margin: 0.8rem 0; }
+
+a { color: var(--accent); text-underline-offset: 3px; }
+a:hover { color: #ff9060; }
+
+code {
+  font-family: var(--font-display);
+  font-size: 0.88em;
+  background: var(--surface);
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 18px;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  margin: 1rem 0;
+}
+
+pre code { background: none; padding: 0; font-size: inherit; }
+
+.callout {
+  background: var(--surface-raised);
+  border-left: 3px solid var(--accent);
+  padding: 14px 18px;
+  border-radius: 0 8px 8px 0;
+  margin: 1.2rem 0;
+  font-size: 0.95rem;
+}
+
+.callout strong { color: var(--fg); }
+
+/* --- STAT ROW --- */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 1.5rem 0;
+}
+
+.stat-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.big-number {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.big-label {
+  font-size: 0.72rem;
+  color: var(--fg-muted);
+  line-height: 1.3;
+}
+
+/* --- PAIN TABLE --- */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  margin: 1rem 0;
+}
+
+.compare-table th {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-muted);
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.compare-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.compare-table tr:last-child td { border-bottom: none; }
+
+.compare-table .dim { color: var(--fg-muted); }
+.compare-table .good { color: var(--good); }
+
+/* --- LIVE DEMO --- */
+.demo-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  margin: 1.2rem 0;
+}
+
+.demo-label {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-muted);
+  margin-bottom: 12px;
+}
+
+.demo-input-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.demo-input-row input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  padding: 10px 14px;
+  border-radius: 6px;
+  outline: none;
+}
+
+.demo-input-row input:focus { border-color: var(--accent); }
+
+.demo-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.demo-btn:hover { background: #ff8050; }
+.demo-btn:disabled { opacity: 0.5; cursor: wait; }
+
+.demo-samples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.demo-sample {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  color: var(--fg-muted);
+  font-size: 0.75rem;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.demo-sample:hover {
+  border-color: var(--accent);
+  color: var(--fg);
+}
+
+.demo-result {
+  display: none;
+  margin-top: 16px;
+}
+
+.demo-result.show { display: block; }
+
+.route-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.route-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.route-step .step-icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+}
+
+.route-step .step-body { min-width: 0; }
+.route-step .step-label {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  color: var(--fg-muted);
+}
+.route-step .step-value {
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.step-classify {
+  background: rgba(255,109,58,0.08);
+  border: 1px solid rgba(255,109,58,0.2);
+}
+.step-classify .step-icon { background: var(--accent); color: #fff; }
+.step-classify .step-value { color: var(--accent); }
+
+.step-route {
+  background: rgba(32,212,154,0.08);
+  border: 1px solid rgba(32,212,154,0.2);
+}
+.step-route .step-icon { background: var(--n8n-green); color: #fff; }
+.step-route .step-value { color: var(--n8n-green); }
+
+.step-time {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  color: var(--fg-muted);
+  margin-top: 6px;
+  text-align: right;
+}
+
+/* --- GIF PLACEHOLDER --- */
+.gif-placeholder {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 40px 20px;
+  text-align: center;
+  margin: 1.2rem 0;
+  color: var(--fg-muted);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+}
+
+/* --- INSTALL STEPS --- */
+.step-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 1rem 0;
+}
+
+.step-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.step-num {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.step-card .step-text { font-size: 0.92rem; }
+.step-card code { font-size: 0.82em; }
+
+/* --- DOWNLOAD BTN --- */
+.download-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 1.2rem 0;
+}
+
+.dl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  padding: 10px 16px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: border-color 0.15s;
+}
+
+.dl-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.dl-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+footer {
+  margin: 2.5rem 0 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  color: var(--fg-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+
+footer a { color: var(--accent-dim); }
+footer a:hover { color: var(--accent); }
+
+@media (max-width: 520px) {
+  .stat-row { grid-template-columns: repeat(2, 1fr); }
+  h1 { font-size: 1.25rem; }
+  .demo-input-row { flex-direction: column; }
+  .demo-btn { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<h1>Jeffy + n8n: free text classification for your workflows</h1>
+<p class="dateline">October 2026 &middot; Community Node</p>
+
+<p>
+  n8n's built-in Text Classifier wraps an LLM call. It works until it doesn't: the model wraps output in markdown fences, returns an array instead of an object, or just drifts between runs. <a href="https://community.n8n.io/t/is-the-text-classifier-broken/228016">Eight separate forum threads</a> report the same parsing failures
+</p>
+
+<p>
+  Jeffy takes a different approach. Logistic regression on frozen embeddings. No LLM, no prompt, no parsing. Same input always gives the same output. The community node brings 70 pretrained classifiers into n8n as a dropdown
+</p>
+
+<div class="stat-row">
+  <div class="stat-item">
+    <span class="big-number" style="color:var(--accent)">15ms</span>
+    <span class="big-label">Per classification</span>
+  </div>
+  <div class="stat-item">
+    <span class="big-number" style="color:var(--n8n-green)">70</span>
+    <span class="big-label">Pretrained tasks</span>
+  </div>
+  <div class="stat-item">
+    <span class="big-number" style="color:var(--good)">94.3%</span>
+    <span class="big-label">Banking77 acc</span>
+  </div>
+  <div class="stat-item">
+    <span class="big-number" style="color:var(--fg)">$0</span>
+    <span class="big-label">Per API call</span>
+  </div>
+</div>
+
+<h2>Try it live</h2>
+
+<p>
+  This calls the real Jeffy API. Type a message, it classifies against <code>banking77</code> (77 intent classes), then routes it the same way the n8n workflow does
+</p>
+
+<div class="demo-box">
+  <div class="demo-label">Customer support router</div>
+  <div class="demo-samples" id="samples"></div>
+  <div class="demo-input-row">
+    <input type="text" id="demo-text" placeholder="Type a customer message...">
+    <button class="demo-btn" id="demo-go" onclick="classify()">Classify</button>
+  </div>
+  <div class="demo-result" id="demo-result">
+    <div class="route-flow" id="route-flow"></div>
+  </div>
+</div>
+
+<h2>Why not the Text Classifier?</h2>
+
+<p>
+  The built-in node sends your text to an LLM and parses the response as JSON. Here's what people run into
+</p>
+
+<div class="callout">
+  <strong>"Failed to parse LLM output"</strong>: the model wraps its answer in <code>```markdown</code> fences. Reported across GPT-4o, Claude, Llama, and Mistral. The workaround is a Code node that strips backticks before parsing
+</div>
+
+<div style="overflow-x:auto">
+<table class="compare-table">
+  <thead>
+    <tr><th></th><th>Text Classifier (LLM)</th><th>Jeffy</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Reliability</td>
+      <td class="dim">JSON parse failures in production</td>
+      <td class="good">Deterministic, always valid JSON</td>
+    </tr>
+    <tr>
+      <td>Latency</td>
+      <td class="dim">500ms &ndash; 3s per item</td>
+      <td class="good">~15ms local, ~300ms remote</td>
+    </tr>
+    <tr>
+      <td>Cost</td>
+      <td class="dim">LLM API credits per call</td>
+      <td class="good">Free (self-hosted or playground)</td>
+    </tr>
+    <tr>
+      <td>API key</td>
+      <td class="dim">Required (OpenAI, Anthropic, etc.)</td>
+      <td class="good">Optional, public playground works</td>
+    </tr>
+    <tr>
+      <td>Setup</td>
+      <td class="dim">Configure LLM + write category descriptions</td>
+      <td class="good">Pick a task from the dropdown</td>
+    </tr>
+    <tr>
+      <td>Privacy</td>
+      <td class="dim">Data sent to LLM provider</td>
+      <td class="good">Self-hostable, data stays local</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h2>The workflow: customer support router</h2>
+
+<p>
+  Customer message comes in. Jeffy classifies it against 77 banking intents, then IF nodes route it. Account closure goes to the retention team, lost/stolen cards go to urgent support, everything else hits the general queue. Each path carries the original label and confidence score
+</p>
+
+<div class="gif-placeholder" id="gif-area">
+  <div style="font-size:2rem;margin-bottom:8px">&#9654;</div>
+  GIF coming soon, n8n workflow running end to end
+</div>
+
+<h2>Install in 3 steps</h2>
+
+<div class="step-cards">
+  <div class="step-card">
+    <span class="step-num">1</span>
+    <div class="step-text">
+      Install the community node<br>
+      <code>npm install n8n-nodes-jeffy</code>
+    </div>
+  </div>
+  <div class="step-card">
+    <span class="step-num">2</span>
+    <div class="step-text">
+      Add a Jeffy API credential<br>
+      <span style="color:var(--fg-muted);font-size:0.85rem">Default: <code>playground.jeffyclassify.com</code> (free, no key needed)</span>
+    </div>
+  </div>
+  <div class="step-card">
+    <span class="step-num">3</span>
+    <div class="step-text">
+      Drag the Jeffy node in, pick a task, connect<br>
+      <span style="color:var(--fg-muted);font-size:0.85rem">70 classifiers available from the dropdown</span>
+    </div>
+  </div>
+</div>
+
+<h2>Download the workflow</h2>
+
+<p>
+  Import this into n8n to get the customer support router from the demo above. Uses Manual Trigger + random sample messages so you can run it right away
+</p>
+
+<div class="download-row">
+  <a class="dl-btn" href="customer-support-router.json" target="_blank">
+    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M7.47 10.78a.75.75 0 001.06 0l3.75-3.75a.75.75 0 00-1.06-1.06L8.75 8.44V1.75a.75.75 0 00-1.5 0v6.69L4.78 5.97a.75.75 0 00-1.06 1.06l3.75 3.75zM3.75 13a.75.75 0 000 1.5h8.5a.75.75 0 000-1.5h-8.5z"/></svg>
+    customer-support-router.json
+  </a>
+  <a class="dl-btn" href="https://github.com/nicobrenner/n8n-nodes-jeffy" target="_blank">
+    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+    GitHub
+  </a>
+</div>
+
+<h2>Self-host or use the playground</h2>
+
+<p>
+  The community node defaults to <code>playground.jeffyclassify.com</code>, a free public instance with all 70 classifiers loaded. No API key, no signup
+</p>
+
+<p>
+  For production, self-host Jeffy on any machine with a CPU:
+</p>
+
+<pre><code><span style="color:var(--accent)">$</span> pip install jeffy-classify
+<span style="color:var(--accent)">$</span> jeffy serve --port 8400</code></pre>
+
+<p>
+  Then point the n8n credential to <code>http://localhost:8400</code>. Your data never leaves your network
+</p>
+
+<h2>What's next</h2>
+
+<p>
+  The node supports four operations: classify single text, batch classify, list available tasks, and health check. Batch sends an array in one request, useful for spreadsheet imports or email batches
+</p>
+
+<p>
+  If you're hitting reliability issues with the built-in Text Classifier, this is a drop-in replacement that won't surprise you at 3am
+</p>
+
+<p>
+  <a href="https://playground.jeffyclassify.com">Try 70 classifiers live</a> &middot; <a href="https://github.com/nicobrenner/n8n-nodes-jeffy">Source on GitHub</a> &middot; <a href="https://github.com/nicobrenner/jeffy">Jeffy</a>
+</p>
+
+<footer>
+  <a href="https://jeffyclassify.com">Jeffy</a>
+  <a href="https://playground.jeffyclassify.com">Playground</a>
+  <a href="https://github.com/nicobrenner/n8n-nodes-jeffy">n8n Node</a>
+  <a href="https://github.com/nicobrenner/jeffy">GitHub</a>
+</footer>
+
+<script>
+var SAMPLES = [
+  "I want to close my account and get my money back",
+  "I think my card has been stolen",
+  "Someone used my card without permission",
+  "How do I set up Apple Pay?",
+  "My card is about to expire, how do I renew it?",
+  "Why was I charged twice for the same transaction?",
+  "Please cancel my account, I'm switching to another bank",
+  "How do I change my PIN?"
+];
+
+var ROUTES = {
+  terminate_account: { dept: "🔴 Retention Team", priority: "high", action: "Escalate to retention specialist" },
+  lost_or_stolen_card: { dept: "🟠 Urgent Support", priority: "critical", action: "Block card immediately" },
+  lost_or_stolen_phone: { dept: "🟠 Urgent Support", priority: "critical", action: "Lock account remotely" },
+  compromised_card: { dept: "🟠 Urgent Support", priority: "critical", action: "Block card immediately" },
+};
+var DEFAULT_ROUTE = { dept: "🟢 General Support", priority: "normal", action: "Add to support queue" };
+
+var samplesEl = document.getElementById("samples");
+SAMPLES.forEach(function(s) {
+  var btn = document.createElement("button");
+  btn.className = "demo-sample";
+  btn.textContent = s.length > 45 ? s.slice(0, 42) + "..." : s;
+  btn.title = s;
+  btn.onclick = function() {
+    document.getElementById("demo-text").value = s;
+    classify();
+  };
+  samplesEl.appendChild(btn);
+});
+
+function classify() {
+  var text = document.getElementById("demo-text").value.trim();
+  if (!text) return;
+  var btn = document.getElementById("demo-go");
+  btn.disabled = true;
+  btn.textContent = "...";
+  var resultEl = document.getElementById("demo-result");
+  resultEl.className = "demo-result";
+
+  fetch("https://playground.jeffyclassify.com/v1/predict", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ task: "banking77", text: text })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    var label = data.label || "unknown";
+    var conf = data.confidence ? Math.round(data.confidence * 100) + "%" : "?";
+    var route = ROUTES[label] || DEFAULT_ROUTE;
+
+    var flow = document.getElementById("route-flow");
+    flow.innerHTML =
+      '<div class="route-step step-classify">' +
+        '<div class="step-icon">J</div>' +
+        '<div class="step-body">' +
+          '<div class="step-label">Jeffy classified as</div>' +
+          '<div class="step-value">' + label.replace(/_/g, ' ') + ' <span style="color:var(--fg-muted);font-weight:400">(' + conf + ')</span></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="route-step step-route">' +
+        '<div class="step-icon">&rarr;</div>' +
+        '<div class="step-body">' +
+          '<div class="step-label">Routed to</div>' +
+          '<div class="step-value">' + route.dept + '</div>' +
+          '<div style="font-size:0.82rem;color:var(--fg-muted)">' + route.action + ' &middot; priority: ' + route.priority + '</div>' +
+        '</div>' +
+      '</div>';
+
+    resultEl.className = "demo-result show";
+  })
+  .catch(function(err) {
+    var flow = document.getElementById("route-flow");
+    flow.innerHTML = '<div style="color:var(--bad);font-size:0.85rem">Request failed: ' + (err.message || err) + '</div>';
+    resultEl.className = "demo-result show";
+  })
+  .finally(function() {
+    btn.disabled = false;
+    btn.textContent = "Classify";
+  });
+}
+
+document.getElementById("demo-text").addEventListener("keydown", function(e) {
+  if (e.key === "Enter") classify();
+});
+
+document.getElementById("demo-text").value = SAMPLES[0];
+classify();
+</script>
+
+<script defer src="https://stats.jeffyclassify.com/script.js" data-website-id="c12de1db-8df3-403c-93e2-a15379affe27" data-hash="true" data-do-not-track="false"></script>
+
+</body>
+</html>

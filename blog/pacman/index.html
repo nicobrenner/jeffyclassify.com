@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How to Beat Pac-Man with a Text Classifier</title>
+<meta name="description" content="Regex + weighted scoring beats every LLM on the Jevman Pac-Man benchmark. 8,035 mean score, 3ms per decision, $0.">
+<meta property="og:title" content="How to Beat Pac-Man with a Text Classifier">
+<meta property="og:description" content="Regex + weighted scoring beats every LLM on the Jevman Pac-Man benchmark. 8,035 mean score, 3ms per decision, $0.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://jeffyclassify.com/blog/pacman/">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+:root {
+  --bg: #0a0a0c;
+  --fg: #e0dfd8;
+  --fg-muted: #8a8880;
+  --surface: #141418;
+  --surface-raised: #1c1c22;
+  --border: #2a2a30;
+  --accent: #ffd800;
+  --accent-dim: #b89e00;
+  --blue: #2121de;
+  --blue-light: #4a4aff;
+  --pellet: #ffb8ae;
+  --ghost-red: #ff0000;
+  --ghost-pink: #ffb8ff;
+  --ghost-cyan: #00ffff;
+  --ghost-orange: #ffb852;
+  --good: #4ade80;
+  --mid: #facc15;
+  --weak: #f87171;
+  --font-display: 'IBM Plex Mono', monospace;
+  --font-body: 'Source Sans 3', -apple-system, sans-serif;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  line-height: 1.65;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+h1 {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--accent);
+  margin: 2.5rem 0 0.3rem;
+  text-wrap: balance;
+}
+
+.dateline {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  color: var(--fg-muted);
+  margin-bottom: 1.5rem;
+}
+
+h2 {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--fg);
+  margin: 2.2rem 0 0.8rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+p { margin: 0.8rem 0; }
+
+a { color: var(--accent); text-underline-offset: 3px; }
+a:hover { color: #ffe566; }
+
+code {
+  font-family: var(--font-display);
+  font-size: 0.88em;
+  background: var(--surface);
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 18px;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  margin: 1rem 0;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+.keyword { color: var(--ghost-cyan); }
+.string { color: var(--good); }
+.number { color: var(--ghost-orange); }
+.comment { color: var(--fg-muted); }
+
+.hero-gif {
+  width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  margin: 1.2rem 0 0.3rem;
+}
+
+.gif-caption {
+  font-size: 0.82rem;
+  color: var(--fg-muted);
+  margin-bottom: 1rem;
+  font-style: italic;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 1.5rem 0;
+}
+
+.stat-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.big-number {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.big-label {
+  font-size: 0.72rem;
+  color: var(--fg-muted);
+  line-height: 1.3;
+}
+
+.gif-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 1rem 0 0.3rem;
+}
+
+.gif-row img {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.callout {
+  background: var(--surface-raised);
+  border-left: 3px solid var(--accent);
+  padding: 14px 18px;
+  border-radius: 0 8px 8px 0;
+  margin: 1.2rem 0;
+  font-size: 0.95rem;
+}
+
+footer {
+  margin: 2.5rem 0 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  color: var(--fg-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+
+footer a { color: var(--accent-dim); }
+footer a:hover { color: var(--accent); }
+
+@media (max-width: 520px) {
+  .stat-row { grid-template-columns: repeat(2, 1fr); }
+  .gif-row { grid-template-columns: 1fr; }
+  h1 { font-size: 1.3rem; }
+}
+</style>
+</head>
+<body>
+
+<h1>How to beat Pac-Man with a text classifier</h1>
+<div class="dateline">Oct 2026 · Nico Brenner</div>
+
+<img class="hero-gif" src="early.gif" alt="Pac-Man early game, classifier choosing left with 89% confidence">
+<div class="gif-caption">First junction. Three options. The classifier picks left with 89% confidence.</div>
+
+<p>
+  <a href="https://github.com/opper-ai/jevman-benchmark">Jevman</a> is a Pac-Man benchmark where AI agents play through structured text descriptions. At each junction, the game tells you what's in each direction (pellet distances, ghost positions, traps) and you pick which way to go.
+</p>
+<p>
+  The top entries use LLMs. I used <a href="https://github.com/nicobrenner/jeffy">Jeffy</a>, an open-source text classifier that runs on CPU.
+</p>
+
+<div class="stat-row">
+  <div class="stat-item">
+    <span class="big-number" style="color:var(--accent)">8,035</span>
+    <span class="big-label">Mean score (24 games)</span>
+  </div>
+  <div class="stat-item">
+    <span class="big-number" style="color:var(--good)">2.5×</span>
+    <span class="big-label">vs. current #1 (3,210)</span>
+  </div>
+  <div class="stat-item">
+    <span class="big-number" style="color:var(--ghost-cyan)">3ms</span>
+    <span class="big-label">Per decision</span>
+  </div>
+  <div class="stat-item">
+    <span class="big-number" style="color:var(--good)">$0</span>
+    <span class="big-label">Per game</span>
+  </div>
+</div>
+
+<h2>What the classifier sees</h2>
+
+<p>At every junction, the game sends one text description per available direction:</p>
+
+<pre><code>Go left: nearest pellet 3 steps away; 5 pellets in the next corridor;
+nearest dangerous ghost 12 steps away, moving away; you reach the
+next junction in 4 steps, 6 steps before any ghost
+
+Go right: nearest pellet 1 step away; 2 pellets in the next corridor;
+DANGER: Blinky in this corridor
+
+Go up: nearest pellet 8 steps away; 0 pellets in the next corridor;
+TRAP: Pinky can reach the next junction in 3 steps, you need 5</code></pre>
+
+<p>
+  There are about 37 unique patterns in these descriptions. All of them contain numbers. All of them are parseable with regex.
+</p>
+
+<h2>Step 1: Feature engineering</h2>
+
+<p>The game descriptions are structured text, so I parse them into numeric features with regex.</p>
+
+<pre><code><span class="keyword">def</span> parse_features(description):
+    f = {<span class="string">"pellet_dist"</span>: <span class="number">99</span>, <span class="string">"ghost_dist"</span>: <span class="number">99</span>,
+         <span class="string">"ghost_approaching"</span>: <span class="number">0</span>, <span class="string">"has_trap"</span>: <span class="number">0</span>,
+         <span class="string">"has_danger"</span>: <span class="number">0</span>, ...}
+
+    <span class="keyword">for</span> part <span class="keyword">in</span> description.split(<span class="string">";"</span>):
+        m = re.search(<span class="string">r"nearest pellet (\d+) steps? away"</span>, part)
+        <span class="keyword">if</span> m: f[<span class="string">"pellet_dist"</span>] = int(m.group(<span class="number">1</span>))
+
+        m = re.search(<span class="string">r"nearest dangerous ghost (\d+) steps? away"</span>, part)
+        <span class="keyword">if</span> m: f[<span class="string">"ghost_dist"</span>] = int(m.group(<span class="number">1</span>))
+
+        <span class="keyword">if</span> <span class="string">"TRAP:"</span> <span class="keyword">in</span> part: f[<span class="string">"has_trap"</span>] = <span class="number">1</span>
+        <span class="keyword">if</span> <span class="string">"DANGER:"</span> <span class="keyword">in</span> part: f[<span class="string">"has_danger"</span>] = <span class="number">1</span>
+    <span class="keyword">return</span> f</code></pre>
+
+<h2>Step 2: Generate training data</h2>
+
+<p>To train a classifier you need labeled examples. I wrote a scoring function with hand-tuned weights and played a few hundred games with it. Each junction becomes one training example: the parsed features are the input, the direction the scorer picked is the label.</p>
+
+<pre><code><span class="keyword">def</span> score_direction(description):
+    f = parse_features(description)
+    score = <span class="number">0.0</span>
+
+    <span class="comment"># Survival: avoid ghosts, traps, danger corridors</span>
+    <span class="keyword">if</span> f[<span class="string">"has_danger"</span>]: score -= <span class="number">100</span>
+    <span class="keyword">if</span> f[<span class="string">"has_trap"</span>]:   score -= <span class="number">80</span>
+    <span class="keyword">if</span> f[<span class="string">"ghost_dist"</span>] &lt; <span class="number">99</span>:
+        threat = max(<span class="number">0</span>, <span class="number">20</span> - f[<span class="string">"ghost_dist"</span>]) * <span class="number">3</span>
+        <span class="keyword">if</span> f[<span class="string">"ghost_approaching"</span>]: threat *= <span class="number">2.5</span>
+        score -= threat
+
+    <span class="comment"># Pellet collection</span>
+    score += max(<span class="number">0</span>, <span class="number">12</span> - f[<span class="string">"pellet_dist"</span>])
+
+    <span class="comment"># Hunt frightened ghosts (200-1600 points each)</span>
+    <span class="keyword">if</span> f[<span class="string">"has_frightened_ghost"</span>]:
+        score += <span class="number">40</span> + max(<span class="number">0</span>, <span class="number">15</span> - f[<span class="string">"frightened_ghost_dist"</span>]) * <span class="number">3</span>
+
+    <span class="keyword">return</span> score</code></pre>
+
+<p>A few hundred games produce thousands of labeled junctions, enough to train on.</p>
+
+<h2>Step 3: Train with Jeffy</h2>
+
+<p><a href="https://github.com/nicobrenner/jeffy">Jeffy</a> is a text classifier that runs on CPU. It supports feature-based classifiers, which is exactly what we need here: the features are already numbers, no embeddings required.</p>
+
+<pre><code><span class="comment"># Train a classifier on the collected game data</span>
+jeffy train --task pacman --features pellet_dist,ghost_dist,ghost_approaching,has_trap,has_danger,... \
+            --data training_games.jsonl
+
+<span class="comment"># Test accuracy on held-out games</span>
+jeffy eval --task pacman --data test_games.jsonl</code></pre>
+
+<p>Training takes under a second. The trained model is a logistic regression head over the numeric features. At game time, Jeffy's <code>predict_features()</code> endpoint takes the parsed feature vector and returns a direction in 3ms.</p>
+
+<h2>Ghost hunting</h2>
+
+<div class="gif-row">
+  <img src="best.gif" alt="Pac-Man navigating junctions with probability overlays">
+  <img src="hunt.gif" alt="Pac-Man chasing a frightened ghost after a power pellet">
+</div>
+<div class="gif-caption">Left: navigating junctions with probability overlays. Right: hunting Pinky after a power pellet.</div>
+
+<p>
+  When a power pellet activates, frightened ghosts are worth 200, 400, 800, and 1600 points in sequence. The scoring function shifts from pellet-chasing to ghost-hunting: <code>+40</code> base plus a distance bonus for nearby frightened ghosts. Average 9.8 ghost kills per game.
+</p>
+
+<h2>Running it yourself</h2>
+
+<pre><code><span class="comment"># Install Jeffy</span>
+pip install jeffy
+
+<span class="comment"># Start the Jeffy endpoint (serves the trained pacman classifier)</span>
+python3 jevman-endpoint.py <span class="number">8787</span>
+
+<span class="comment"># Clone the benchmark and run 24 games</span>
+git clone https://github.com/opper-ai/jevman-benchmark
+cd jevman-benchmark && npm install
+npm run submissions -- --model jeffy --endpoint http://localhost:<span class="number">8787</span></code></pre>
+
+<p>Each game takes 2-5 seconds. Total run: ~90 seconds for all 24 games. The endpoint parses each junction's text into features, feeds them to the Jeffy classifier, and returns a direction.</p>
+
+<h2>Why this works</h2>
+
+<div class="callout">
+  The descriptions are structured text. All the information is already there as numbers: pellet distances, ghost distances, trap conditions. You don't need reasoning. You need parsing.
+</div>
+
+<p>
+  An LLM reading "nearest dangerous ghost 5 steps away, coming toward you" does the same thing the regex does: extracts the number 5 and the flag "coming toward." It just does it with 7 billion parameters instead of one regular expression, and takes 650ms instead of 3ms.
+</p>
+
+<p>
+  The Jeffy classifier learns the same decision boundaries as the hand-tuned scoring function, but from examples instead of manually chosen weights. Once trained, it generalizes to junction configurations it hasn't seen before. And because it's logistic regression over a handful of numeric features, it runs on any CPU in 3ms.
+</p>
+
+<p>
+  This is the classifier sweet spot: when the answer is a pattern in the text, not reasoning about the text. Pac-Man with structured descriptions is a classification problem. <a href="https://github.com/opper-ai/jevman-benchmark/pull/18">The PR is open</a>, the CI will verify the results.
+</p>
+
+<footer>
+  <a href="https://jeffyclassify.com/">Jeffy</a>
+  <span>·</span>
+  <a href="https://playground.jeffyclassify.com/">Playground</a>
+  <span>·</span>
+  <a href="https://github.com/nicobrenner/jeffy">GitHub</a>
+  <span>·</span>
+  <a href="https://github.com/opper-ai/jevman-benchmark/pull/18">Jevman PR #18</a>
+  <span>·</span>
+  <a href="https://github.com/opper-ai/jevman-benchmark">Jevman benchmark</a>
+</footer>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BXL0V8163H"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-BXL0V8163H');
+</script>
+<script defer src="https://stats.jeffyclassify.com/script.js" data-website-id="f9036a1c-0cc2-4e1d-ac25-2eb9e5dfc530"></script>
+<script>
+(function(){
+var idle=0,active=true;
+function t(n,d){if(typeof umami!=='undefined')umami.track(n,d)}
+function reset(){idle=0;if(!active){active=true}}
+document.addEventListener('pointermove',reset);
+document.addEventListener('keydown',reset);
+document.addEventListener('pointerdown',function(){reset();t('first-interaction')},{once:true});
+setInterval(function(){idle+=30;if(idle>300)active=false;if(active)t('heartbeat')},30000);
+})();
+</script>
+
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4bc70e2c01a94c73b74392e4234840661791215815920" integrity="sha512-L0ha0OXavK/8okipN9F8BtP84dg9DUhPERbBXzwI6dgTA55d2+yweo3pn5CSFYs45/r8md2+xvUPtTdvTNRfjA==" data-cf-beacon='{"version":"2024.11.0","token":"ad0b1a41938f436ebfd31a32517ece43","r":1,"spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>

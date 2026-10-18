@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Can AI Read Your Mind? - Jeffy</title>
+<meta name="description" content="A real-time pattern detector learns your left/right choices and predicts what you'll pick next. How unpredictable are you?">
+<meta property="og:title" content="Can AI Read Your Mind?">
+<meta property="og:description" content="A Markov chain learns your left/right pattern and predicts what you'll pick next. How unpredictable are you?">
+<meta property="og:image" content="https://jeffyclassify.com/blog/mind-reader/og.png?v=2">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://jeffyclassify.com/blog/mind-reader/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Can AI Read Your Mind?">
+<meta name="twitter:description" content="A Markov chain learns your left/right pattern and predicts what you'll pick next.">
+<meta name="twitter:image" content="https://jeffyclassify.com/blog/mind-reader/og.png?v=2">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+:root{
+  --bg:#0a0a0c;--fg:#e0dfd8;--fg-muted:#8a8880;
+  --surface:#141418;--surface-raised:#1c1c22;--border:#2a2a30;
+  --accent:#20d49a;--accent-dim:#178c68;
+  --hit:#4ade80;--hit-flash:rgba(74,222,128,.1);
+  --fail:#f87171;--fail-flash:rgba(248,113,113,.08);
+  --streak:#facc15;
+  --gold:#fbbf24;--silver:#94a3b8;--bronze:#d97706;--diamond:#a78bfa;
+  --font-display:'IBM Plex Mono',monospace;
+  --font-body:'Source Sans 3',-apple-system,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);line-height:1.65;max-width:720px;margin:0 auto;padding:0 20px}
+
+h1{font-family:var(--font-display);font-size:1.6rem;font-weight:600;line-height:1.3;color:var(--accent);margin:2.5rem 0 .3rem;text-wrap:balance}
+.dateline{font-family:var(--font-display);font-size:.78rem;color:var(--fg-muted);margin-bottom:1.5rem}
+h2{font-family:var(--font-display);font-size:1.05rem;font-weight:600;color:var(--fg);margin:2.2rem 0 .8rem;padding-top:.5rem;border-top:1px solid var(--border)}
+p{margin:.8rem 0}
+a{color:var(--accent);text-underline-offset:3px}a:hover{color:#5ce8b8}
+code{font-family:var(--font-display);font-size:.88em;background:var(--surface);padding:2px 5px;border-radius:3px}
+
+/* Mode selector */
+.mode-bar{display:flex;gap:4px;margin:.6rem 0;flex-wrap:wrap}
+.mode-btn{
+  font-family:var(--font-display);font-size:.72rem;font-weight:500;
+  padding:4px 12px;border-radius:4px;border:1px solid var(--border);
+  background:var(--surface);color:var(--fg-muted);cursor:pointer;
+  transition:all .15s;white-space:nowrap;
+}
+.mode-btn:hover{border-color:var(--accent-dim);color:var(--fg)}
+.mode-btn.active{background:var(--accent-dim);border-color:var(--accent);color:var(--fg)}
+.mode-btn.locked{opacity:.4;cursor:default}
+.mode-btn.locked:hover{border-color:var(--border);color:var(--fg-muted)}
+
+/* Game widget */
+.game-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px 16px 14px;margin:1.2rem 0;display:flex;flex-direction:column;gap:4px}
+.top{display:flex;flex-direction:column;align-items:center;gap:1px}
+.pct{font-family:var(--font-display);font-weight:600;font-size:clamp(32px,9vw,44px);line-height:1;font-variant-numeric:tabular-nums;animation:pulse 1.8s ease-in-out infinite}
+.pct.hot{color:var(--hit);text-shadow:0 0 20px rgba(74,222,128,.2)}
+.pct.warm{color:var(--streak);text-shadow:0 0 18px rgba(250,204,21,.12)}
+.pct.cool{color:var(--fail);text-shadow:0 0 18px rgba(248,113,113,.12)}
+.pct.wait{color:var(--fg-muted);animation:none}
+.doom{font-size:24px;line-height:1}
+.res{font-family:var(--font-display);font-weight:600;font-size:16px;min-height:20px;line-height:20px}
+.res.hit{color:var(--hit)}.res.miss{color:var(--fail)}
+.arena{display:flex;min-height:90px;gap:1px;border-radius:6px;overflow:hidden;border:1px solid var(--border);position:relative}
+.side{flex:1;display:flex;align-items:center;justify-content:center;font-size:clamp(36px,10vw,48px);color:var(--fg-muted);opacity:.3;cursor:pointer;user-select:none;-webkit-user-select:none;background:var(--surface-raised);transition:opacity .1s,background .15s,color .15s;-webkit-tap-highlight-color:transparent}
+.side:hover{opacity:.5}.side:active{opacity:.65}
+.side.flash-hit{opacity:1;color:var(--hit);background:var(--hit-flash)}
+.side.flash-miss{opacity:1;color:var(--fail);background:var(--fail-flash)}
+.mid{width:1px;background:var(--border);flex-shrink:0}
+.info{font-family:var(--font-display);font-size:.72rem;color:var(--fg-muted);text-align:center;font-variant-numeric:tabular-nums;min-height:16px}
+.info .stk{color:var(--streak)}
+/* Mode instructions */
+.mode-inst{
+  font-family:var(--font-display);font-size:.65rem;color:var(--fg-muted);
+  text-align:center;min-height:14px;padding:2px 0 0;opacity:.7;
+}
+/* Binary pick sequence */
+.pick-seq-wrap{display:flex;align-items:center;gap:6px;padding:2px 0;min-height:0}
+.pick-seq-label{font-family:var(--font-display);font-size:.55rem;color:var(--fg-muted);white-space:nowrap;flex-shrink:0}
+.pick-seq-count{font-family:var(--font-display);font-size:.55rem;color:var(--fg-muted);white-space:nowrap;flex-shrink:0;font-variant-numeric:tabular-nums}
+.pick-seq{display:flex;gap:1.5px;flex-wrap:wrap;justify-content:center;min-height:0;flex:1;min-width:0}
+.pick-sq{
+  width:7px;height:7px;border-radius:1.5px;
+  position:relative;flex-shrink:0;
+  transition:width .3s,margin .3s,opacity .3s;
+}
+.pick-sq.l{background:#f0a05a}
+.pick-sq.r{background:var(--accent)}
+.pick-sq.new{animation:sqIn .2s cubic-bezier(.34,1.56,.64,1)}
+.pick-sq.popping{
+  animation:sqPuff .45s ease forwards;
+  pointer-events:none;
+}
+.pick-sq.popping::after{
+  content:'';position:absolute;
+  top:50%;left:50%;width:100%;height:100%;
+  transform:translate(-50%,-50%) scale(0);
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(74,222,128,.6) 0%,transparent 70%);
+  animation:sqBurst .35s ease forwards;
+}
+.pick-sq.l.popping::after{
+  background:radial-gradient(circle,rgba(240,160,90,.6) 0%,transparent 70%);
+}
+@keyframes sqIn{0%{transform:scale(0)}100%{transform:scale(1)}}
+@keyframes sqPuff{
+  0%{transform:scale(1);opacity:1}
+  25%{transform:scale(1.6);opacity:1}
+  100%{transform:scale(0);opacity:0;width:0;margin:0}
+}
+@keyframes sqBurst{
+  0%{transform:translate(-50%,-50%) scale(0);opacity:.8}
+  100%{transform:translate(-50%,-50%) scale(4);opacity:0}
+}
+
+.chart-wrap-outer{background:var(--surface-raised);border:1px solid var(--border);border-radius:6px;padding:6px 10px 4px}
+.chart-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
+.chart-label{font-family:var(--font-display);font-size:.68rem;font-weight:500;color:var(--fg-muted);text-transform:uppercase;letter-spacing:.06em}
+.chart-leg{display:flex;gap:8px}
+.chart-leg span{font-size:.6rem;font-family:var(--font-display);display:flex;align-items:center;gap:2px;color:var(--fg-muted)}
+.chart-leg i{display:inline-block;width:10px;height:1.5px;border-radius:1px}
+.chart-leg .rl{background:var(--accent)}.chart-leg .pr{background:var(--fail);opacity:.5}.chart-leg .pj{background:var(--accent);opacity:.35}
+.chart-empty{height:28px;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-family:var(--font-display);color:var(--fg-muted)}
+.chart-wrap{position:relative}
+.chart-50{position:absolute;left:0;font-size:.55rem;font-family:var(--font-display);color:var(--fg-muted);opacity:.4}
+.hint{font-size:.72rem;font-family:var(--font-display);color:var(--fg-muted);text-align:center;opacity:.5}
+.live-bar{font-size:.68rem;font-family:var(--font-display);font-weight:500;color:var(--fg-muted);display:flex;align-items:center;gap:3px;justify-content:center;font-variant-numeric:tabular-nums;padding-top:4px}
+.live-dot{width:4px;height:4px;border-radius:50%;background:var(--hit);animation:pdot 2s ease-in-out infinite}
+.live-sep{opacity:.4}
+
+/* Trophy shelf */
+.trophy-shelf{
+  display:flex;gap:8px;justify-content:center;padding:8px 0 4px;
+  min-height:0;transition:min-height .3s;
+}
+.trophy-shelf:empty{display:none}
+.trophy{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  animation:trophyIn .5s cubic-bezier(.34,1.56,.64,1);
+}
+.trophy-icon{font-size:28px;line-height:1;filter:drop-shadow(0 0 6px rgba(255,255,255,.15))}
+.trophy-label{
+  font-family:var(--font-display);font-size:.52rem;font-weight:600;
+  text-transform:uppercase;letter-spacing:.04em;text-align:center;
+  max-width:72px;line-height:1.2;
+}
+.trophy-picks{font-family:var(--font-display);font-size:.48rem;color:var(--fg-muted)}
+.trophy.bronze .trophy-label{color:var(--bronze)}
+.trophy.silver .trophy-label{color:var(--silver)}
+.trophy.gold .trophy-label{color:var(--gold)}
+.trophy.diamond .trophy-label{color:var(--diamond)}
+
+/* Trophy unlock banner */
+.trophy-banner{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);
+  background:var(--surface);border:2px solid var(--border);border-radius:12px;
+  padding:20px 28px;text-align:center;z-index:100;
+  box-shadow:0 0 60px rgba(0,0,0,.6);
+  pointer-events:none;
+}
+.trophy-banner.show{
+  animation:bannerPop .6s cubic-bezier(.34,1.56,.64,1) forwards,
+            bannerFade .4s ease 1.8s forwards;
+}
+.trophy-banner .big-icon{font-size:48px;line-height:1;margin-bottom:6px}
+.trophy-banner .big-title{font-family:var(--font-display);font-size:.9rem;font-weight:600;margin-bottom:2px}
+.trophy-banner .big-sub{font-family:var(--font-display);font-size:.68rem;color:var(--fg-muted)}
+
+/* Boss fight */
+.boss-bar{display:none;padding:6px 0 2px}
+.boss-level{
+  display:flex;align-items:center;gap:8px;justify-content:center;
+  font-family:var(--font-display);font-size:.68rem;color:var(--fg-muted);
+}
+.boss-level .lvl{color:var(--fail);font-weight:600}
+.boss-level .lvl.max{color:var(--diamond);text-shadow:0 0 10px rgba(167,139,250,.3)}
+.boss-hp{
+  flex:1;max-width:180px;height:6px;
+  background:var(--surface);border-radius:3px;overflow:hidden;
+  border:1px solid var(--border);
+}
+.boss-hp-fill{
+  height:100%;border-radius:3px;
+  transition:width .3s,background .3s;
+}
+.boss-hp-fill.low{background:var(--hit)}
+.boss-hp-fill.mid{background:var(--streak)}
+.boss-hp-fill.high{background:var(--fail)}
+.boss-hp-fill.max{background:var(--diamond)}
+.boss-msg{
+  font-family:var(--font-display);font-size:.62rem;color:var(--fail);
+  text-align:center;min-height:14px;
+  animation:bossFlash .4s ease;
+}
+@keyframes bossFlash{0%{opacity:0;transform:translateY(-4px)}100%{opacity:1;transform:translateY(0)}}
+
+/* Survival mode */
+.survival-bar{display:none;padding:6px 0 2px;text-align:center}
+.survival-hearts{
+  display:flex;align-items:center;justify-content:center;gap:4px;
+  font-size:20px;line-height:1;
+}
+.survival-hearts .heart{transition:transform .2s,opacity .2s}
+.survival-hearts .heart.lost{transform:scale(0);opacity:0}
+.survival-hearts .heart.bonus{animation:heartGain .4s cubic-bezier(.34,1.56,.64,1)}
+.survival-score{
+  font-family:var(--font-display);font-size:.62rem;color:var(--fg-muted);
+  margin-top:2px;
+}
+.survival-score span{color:var(--accent);font-weight:600}
+.game-over{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:4px;
+  background:rgba(10,10,12,.92);border-radius:6px;z-index:10;
+  animation:fadeIn .3s ease;
+}
+.game-over .go-icon{font-size:32px;line-height:1}
+.game-over .go-title{
+  font-family:var(--font-display);font-size:.9rem;font-weight:600;color:var(--fail);
+}
+.game-over .go-stat{
+  font-family:var(--font-display);font-size:.68rem;color:var(--fg-muted);line-height:1.3;
+}
+.game-over .go-stat span{color:var(--accent);font-weight:600}
+.game-over .go-btn{
+  font-family:var(--font-display);font-size:.68rem;font-weight:600;
+  padding:5px 16px;border-radius:4px;border:1px solid var(--accent);
+  background:var(--accent-dim);color:var(--fg);cursor:pointer;
+  margin-top:2px;transition:background .15s;
+}
+.game-over .go-btn:hover{background:var(--accent)}
+@keyframes heartGain{0%{transform:scale(0)}100%{transform:scale(1)}}
+@keyframes fadeIn{0%{opacity:0}100%{opacity:1}}
+
+/* Grade mode */
+.grade-bar{display:none;padding:6px 0 2px}
+.grade-progress{
+  display:flex;align-items:center;gap:8px;justify-content:center;
+  font-family:var(--font-display);font-size:.68rem;color:var(--fg-muted);
+}
+.grade-progress .gq{font-weight:600;min-width:90px}
+.grade-track{
+  flex:1;max-width:160px;height:6px;
+  background:var(--surface);border-radius:3px;overflow:hidden;
+  border:1px solid var(--border);
+}
+.grade-track-fill{
+  height:100%;border-radius:3px;
+  background:var(--accent);transition:width .3s;
+}
+.grade-live{font-weight:600;min-width:20px;text-align:center}
+.grade-result{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:4px;
+  background:rgba(10,10,12,.92);border-radius:6px;z-index:10;
+  animation:fadeIn .3s ease;
+}
+.grade-letter{
+  font-family:var(--font-display);font-size:48px;font-weight:700;line-height:1;
+}
+.grade-letter.gr-a{color:var(--hit);text-shadow:0 0 20px rgba(74,222,128,.3)}
+.grade-letter.gr-b{color:var(--accent);text-shadow:0 0 20px rgba(32,212,154,.25)}
+.grade-letter.gr-c{color:var(--streak);text-shadow:0 0 18px rgba(250,204,21,.2)}
+.grade-letter.gr-d{color:var(--fail);text-shadow:0 0 18px rgba(248,113,113,.15)}
+.grade-letter.gr-f{color:var(--fail);text-shadow:0 0 25px rgba(248,113,113,.3)}
+.grade-comment{font-family:var(--font-display);font-size:.72rem;font-weight:600;color:var(--fg)}
+.grade-stat{font-family:var(--font-display);font-size:.68rem;color:var(--fg-muted);line-height:1.3}
+.grade-stat span{color:var(--accent);font-weight:600}
+
+/* Streak Breaker */
+.streak-breaker-bar{display:none;padding:6px 0 2px}
+.sb-row{display:flex;align-items:center;gap:8px;justify-content:center}
+.sb-streak-label{font-family:var(--font-display);font-size:.62rem;color:var(--fg-muted);white-space:nowrap}
+.sb-streak-track{flex:1;max-width:140px;height:8px;background:var(--surface);border-radius:4px;overflow:hidden;border:1px solid var(--border)}
+.sb-streak-fill{height:100%;border-radius:4px;transition:width .3s,background .3s}
+.sb-streak-fill.s-safe{background:var(--hit)}
+.sb-streak-fill.s-warm{background:var(--streak)}
+.sb-streak-fill.s-hot{background:var(--fail)}
+.sb-streak-fill.s-crit{background:var(--fail);animation:sbPulse .5s ease-in-out infinite}
+.sb-streak-num{font-family:var(--font-display);font-size:.72rem;font-weight:600;min-width:16px;text-align:center;transition:color .2s}
+.sb-streak-num.s-safe{color:var(--hit)}
+.sb-streak-num.s-warm{color:var(--streak)}
+.sb-streak-num.s-hot{color:var(--fail)}
+.sb-streak-num.s-crit{color:var(--fail);animation:sbPulse .5s ease-in-out infinite}
+.sb-stats{display:flex;gap:12px;justify-content:center;font-family:var(--font-display);font-size:.62rem;color:var(--fg-muted);margin-top:2px}
+.sb-val{color:var(--accent);font-weight:600}
+.sb-break-msg{font-family:var(--font-display);font-size:.62rem;font-weight:600;text-align:center;min-height:14px;color:var(--hit)}
+@keyframes sbPulse{0%,100%{opacity:1}50%{opacity:.5}}
+@keyframes sbBreakFlash{0%{opacity:0;transform:scale(.8)}50%{opacity:1;transform:scale(1.1)}100%{opacity:1;transform:scale(1)}}
+
+/* Leaderboard */
+.leaderboard-bar{display:none;padding:6px 0 2px}
+.lb-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
+.lb-head-label{font-family:var(--font-display);font-size:.65rem;font-weight:600;color:var(--fg)}
+.lb-head-metric{font-family:var(--font-display);font-size:.55rem;color:var(--fg-muted)}
+.lb-list{display:flex;flex-direction:column;gap:1px;max-height:120px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.lb-row{display:flex;align-items:center;gap:6px;padding:3px 8px;border-radius:3px;font-family:var(--font-display);font-size:.6rem;color:var(--fg-muted);background:var(--surface);transition:background .2s}
+.lb-row.you{background:var(--surface-raised);border:1px solid var(--accent-dim);color:var(--fg)}
+.lb-row.you .lb-name{color:var(--accent);font-weight:600}
+.lb-rank{min-width:20px;text-align:right;font-weight:600}
+.lb-rank.top3{color:var(--gold)}
+.lb-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-score{font-weight:600;color:var(--accent);min-width:28px;text-align:right}
+.lb-picks{color:var(--fg-muted);font-size:.55rem;min-width:36px;text-align:right}
+.lb-qualify{font-family:var(--font-display);font-size:.58rem;color:var(--fg-muted);text-align:center;padding:4px 0 0;opacity:.6}
+.lb-you{display:flex;align-items:center;gap:6px;padding:4px 0 0;font-family:var(--font-display);font-size:.6rem}
+.lb-you span{color:var(--fg-muted);white-space:nowrap}
+.lb-you input{flex:1;max-width:120px;padding:2px 6px;border-radius:3px;border:1px solid var(--border);background:var(--surface);color:var(--fg);font-family:var(--font-display);font-size:.6rem;outline:none}
+.lb-you input:focus{border-color:var(--accent)}
+.lb-you button{font-family:var(--font-display);font-size:.55rem;font-weight:600;padding:2px 8px;border-radius:3px;border:1px solid var(--accent);background:var(--accent-dim);color:var(--fg);cursor:pointer}
+
+@keyframes trophyIn{0%{transform:scale(0) rotate(-20deg);opacity:0}100%{transform:scale(1) rotate(0);opacity:1}}
+@keyframes bannerPop{0%{transform:translate(-50%,-50%) scale(0)}100%{transform:translate(-50%,-50%) scale(1)}}
+@keyframes bannerFade{to{opacity:0;transform:translate(-50%,-50%) scale(.9)}}
+
+footer{margin:2.5rem 0 3rem;padding-top:1rem;border-top:1px solid var(--border);font-family:var(--font-display);font-size:.82rem;color:var(--fg-muted);display:flex;flex-wrap:wrap;gap:6px 16px}
+footer a{color:var(--accent-dim)}footer a:hover{color:var(--accent)}
+
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+@keyframes pdot{0%,100%{opacity:.5}50%{opacity:1}}
+@media(max-width:520px){
+  h1{font-size:1.2rem;margin-top:1rem;margin-bottom:.15rem}
+  .dateline{margin-bottom:.5rem}
+  .intro{font-size:.9rem;margin-bottom:.5rem}
+  .mode-bar{margin:.3rem 0}
+  .mode-btn{font-size:.65rem;padding:3px 8px}
+  .game-card{margin-inline:-20px;border-radius:0;border-left:none;border-right:none;padding:12px 12px 8px;gap:2px}
+  .top{gap:0}
+  .pct{font-size:clamp(36px,11vw,48px)}
+  .doom{font-size:20px}
+  .res{font-size:14px;min-height:16px;line-height:16px}
+  .arena{min-height:clamp(140px,35vh,220px);border-radius:12px}
+  .side{font-size:clamp(52px,15vw,72px);font-weight:400}
+  .info{font-size:.65rem}
+  .chart-wrap-outer{padding:4px 8px 3px}
+  .chart-label,.chart-leg span{font-size:.58rem}
+  .hint{display:none}
+  .live-bar{font-size:.6rem;padding-top:2px}
+  .trophy-icon{font-size:22px}
+  .trophy-label{font-size:.48rem;max-width:56px}
+  .sb-streak-track{max-width:120px}
+  .sb-stats{gap:8px;font-size:.55rem}
+  .lb-list{max-height:100px}
+  .lb-row{padding:2px 6px;font-size:.55rem}
+  .lb-head-label{font-size:.58rem}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+
+<h1>Can AI read your mind?</h1>
+<div class="dateline">Oct 2026 · Nico Brenner</div>
+
+<p class="intro">Humans are terrible at being random. Tap or use arrow keys to pick left or right. A Markov chain learns your pattern</p>
+
+<div class="mode-bar">
+  <button class="mode-btn" data-mode="vanilla">Vanilla</button>
+  <button class="mode-btn" data-mode="trophies">Trophies 🏆</button>
+  <button class="mode-btn active" data-mode="boss">Boss Fight 👾</button>
+  <button class="mode-btn" data-mode="survival">Survival 💀</button>
+  <button class="mode-btn" data-mode="grade">Grade 📝</button>
+  <button class="mode-btn" data-mode="streaks">Streak Breaker ⛓️</button>
+  <button class="mode-btn" data-mode="leaderboard">Leaderboard 🏅</button>
+</div>
+
+<div class="game-card">
+  <div class="top">
+    <div class="pct wait" id="pct">—</div>
+    <div class="doom" id="doom">🧠</div>
+    <div class="res" id="res"></div>
+    <div class="pick-seq-wrap">
+      <span class="pick-seq-label">pattern</span>
+      <div id="pick-seq" class="pick-seq"></div>
+      <span class="pick-seq-count" id="pick-seq-count"></span>
+    </div>
+  </div>
+  <div class="mode-inst" id="mode-inst"></div>
+  <div class="arena">
+    <div class="side" id="sl">←</div>
+    <div class="mid"></div>
+    <div class="side" id="sr">→</div>
+    <div class="game-over" id="game-over" style="display:none">
+      <div class="go-icon">💀</div>
+      <div class="go-title">GAME OVER</div>
+      <div class="go-stat">You survived <span id="go-picks">0</span> picks</div>
+      <div class="go-stat">AI accuracy: <span id="go-acc">0</span>%</div>
+      <button class="go-btn" id="go-retry">Play Again</button>
+    </div>
+    <div class="grade-result" id="grade-result" style="display:none">
+      <div class="grade-letter" id="grade-letter">A+</div>
+      <div class="grade-comment" id="grade-comment"></div>
+      <div class="grade-stat">AI read you <span id="grade-acc">0</span>% of the time</div>
+      <button class="go-btn" id="grade-retry">Retake Exam</button>
+    </div>
+  </div>
+  <div class="info" id="info">Tap or press ← → to start</div>
+  <div id="boss-bar" class="boss-bar">
+    <div class="boss-level"><span class="lvl" id="boss-lvl">Level 1</span><div class="boss-hp"><div class="boss-hp-fill low" id="boss-hp" style="width:0%"></div></div><span id="boss-face">👾</span></div>
+    <div class="boss-msg" id="boss-msg"></div>
+  </div>
+  <div id="survival-bar" class="survival-bar">
+    <div class="survival-hearts" id="survival-hearts"></div>
+    <div class="survival-score">Survived: <span id="survival-score">0</span> picks</div>
+  </div>
+  <div id="grade-bar" class="grade-bar">
+    <div class="grade-progress"><span class="gq" id="grade-q">Question 0/50</span><div class="grade-track"><div class="grade-track-fill" id="grade-fill" style="width:0%"></div></div><span class="grade-live" id="grade-live">—</span></div>
+  </div>
+  <div id="streak-breaker-bar" class="streak-breaker-bar">
+    <div class="sb-row"><span class="sb-streak-label">AI Streak</span><div class="sb-streak-track"><div class="sb-streak-fill" id="sb-fill" style="width:0%"></div></div><span class="sb-streak-num s-safe" id="sb-streak-num">0</span></div>
+    <div class="sb-stats"><span>Breaks: <span id="sb-breaks" class="sb-val">0</span></span><span>Points: <span id="sb-points" class="sb-val">0</span></span><span>Best: <span id="sb-best" class="sb-val">0</span></span></div>
+    <div class="sb-break-msg" id="sb-msg"></div>
+  </div>
+  <div id="leaderboard-bar" class="leaderboard-bar">
+    <div class="lb-head"><span class="lb-head-label">Chaos Leaderboard</span><span class="lb-head-metric">Score = unpredictability</span></div>
+    <div class="lb-list" id="lb-list"></div>
+    <div class="lb-qualify" id="lb-qualify">50 picks to qualify</div>
+    <div class="lb-you" id="lb-you" style="display:none">
+      <span id="lb-you-rank"></span>
+      <input id="lb-you-name" maxlength="20" spellcheck="false" autocomplete="off">
+      <button id="lb-you-save">Save</button>
+    </div>
+  </div>
+  <div id="trophy-shelf" class="trophy-shelf"></div>
+  <div class="chart-wrap-outer">
+    <div class="chart-head">
+      <span class="chart-label">% Right</span>
+      <div class="chart-leg"><span><i class="rl"></i>you</span><span><i class="pr"></i>AI</span><span><i class="pj"></i>projected</span></div>
+    </div>
+    <div id="chart"><div class="chart-empty">Chart builds as you play</div></div>
+  </div>
+  <div class="hint">← → keys or tap</div>
+  <div class="live-bar" id="live"></div>
+</div>
+
+<div id="trophy-banner" class="trophy-banner">
+  <div class="big-icon" id="banner-icon"></div>
+  <div class="big-title" id="banner-title"></div>
+  <div class="big-sub" id="banner-sub"></div>
+</div>
+
+<h2>How it works</h2>
+
+<p>The predictor builds a frequency table from your recent picks. Given the context of your last 1-4 choices, it looks up what you did next in similar situations and bets on the most likely side. After about 20 picks it typically reads you 60-70% of the time</p>
+
+<p>This is the same core idea behind <a href="https://github.com/nicobrenner/jeffy">Jeffy</a>, an open-source text classifier. Instead of tracking left/right patterns, Jeffy maps text into a high-dimensional embedding space and trains logistic regression on top. Same principle: find patterns in how humans make choices, then predict them</p>
+
+<p>Jeffy ships 68 pretrained classifiers for text, game state, and numeric features. They run on CPU in under 80ms, no GPU or API keys needed. Install with <code>pip install jeffy-classify</code> and start classifying in 3 lines of code</p>
+
+<p><em>Text classification that runs anywhere</em></p>
+
+<footer>
+  <a href="https://jeffyclassify.com">Jeffy</a>
+  <a href="https://playground.jeffyclassify.com">Playground</a>
+  <a href="https://github.com/nicobrenner/jeffy"><svg id="star-icon" style="width:12px;height:12px;vertical-align:-1px;margin-right:1px;display:none" viewBox="0 0 16 16" fill="currentColor"><path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/></svg><span id="star-count"></span> on <svg style="width:14px;height:14px;vertical-align:-2px;margin:0 2px" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
+</footer>
+<script>
+fetch('https://api.github.com/repos/nicobrenner/jeffy').then(r=>r.json()).then(d=>{
+  if(d.stargazers_count){document.getElementById('star-count').textContent=d.stargazers_count;document.getElementById('star-icon').style.display='inline';}
+}).catch(()=>{});
+</script>
+
+<script>
+const ROLL=10;
+let currentMode='boss';
+let hasScrolled=false;
+
+// Mode switching
+const modeBtns=document.querySelectorAll('.mode-btn');
+modeBtns.forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    if(btn.classList.contains('locked'))return;
+    modeBtns.forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const newMode=btn.dataset.mode;
+    if(newMode!==currentMode){
+      currentMode=newMode;
+      resetGame();
+    }
+  });
+});
+
+// Core game state
+let hist=[],ctxMap={};
+let total=0,hits=0,chartData=[],locked=false,lastPickTime=0,projSteps=0;
+let userPickData=[],aiPredData=[];
+
+// Trophy state
+const TROPHY_MILESTONES=[
+  {at:25, tier:'bronze', icon:'🥉'},
+  {at:50, tier:'silver', icon:'🥈'},
+  {at:100, tier:'gold', icon:'🏆'},
+  {at:200, tier:'diamond', icon:'💎'},
+];
+let trophiesAwarded=[];
+
+// Boss fight state
+const BOSS_LEVELS=[
+  {at:0,  ctx:2, name:'Level 1', face:'👾', msg:'A simple pattern matcher appears...'},
+  {at:50, ctx:3, name:'Level 2', face:'👹', msg:'I can see deeper now'},
+  {at:100,ctx:4, name:'Level 3', face:'🤖', msg:'Your patterns are becoming clear'},
+  {at:150,ctx:5, name:'Level 4', face:'🧠', msg:'I know what you are thinking'},
+  {at:200,ctx:6, name:'FINAL BOSS', face:'👁️', msg:'There is no escape from prediction'},
+];
+let bossLevel=0,bossLastLevel=0;
+
+// Survival state
+let survivalLives=3,survivalMaxLives=5,survivalDead=false,survivalLastBonus=0;
+
+// Grade state
+const GRADE_TOTAL=50;
+let gradeDone=false;
+const GRADES=[
+  {max:40,letter:'A+',cls:'gr-a',comment:'Pure chaos'},
+  {max:48,letter:'A', cls:'gr-a',comment:'Nearly random'},
+  {max:53,letter:'B+',cls:'gr-b',comment:'Hard to read'},
+  {max:58,letter:'B', cls:'gr-b',comment:'Somewhat unpredictable'},
+  {max:63,letter:'C+',cls:'gr-c',comment:'Patterns emerging'},
+  {max:68,letter:'C', cls:'gr-c',comment:'Readable'},
+  {max:75,letter:'D', cls:'gr-d',comment:'Predictable'},
+  {max:100,letter:'F',cls:'gr-f',comment:'Open book'},
+];
+
+// Streak Breaker state
+let sbStreak=0,sbBreaks=0,sbPoints=0,sbBestBreak=0;
+
+// Leaderboard
+const LB_FAKE=[
+  {name:'entropy_queen',score:48,picks:247},
+  {name:'random_walker',score:46,picks:189},
+  {name:'chaos_theory',score:44,picks:312},
+  {name:'coin_flipper',score:42,picks:156},
+  {name:'noise_machine',score:40,picks:201},
+  {name:'dice_roller',score:38,picks:178},
+  {name:'quantum_rng',score:37,picks:290},
+  {name:'static_noise',score:35,picks:145},
+  {name:'jitter_bug',score:34,picks:234},
+  {name:'fuzzy_logic',score:32,picks:167},
+  {name:'bit_flipper',score:31,picks:198},
+  {name:'brownian_42',score:29,picks:276},
+  {name:'signal_noise',score:27,picks:143},
+  {name:'phase_shift',score:25,picks:212},
+  {name:'white_noise',score:22,picks:189},
+];
+let lbSessionId='ses_'+Math.random().toString(36).slice(2,10);
+let lbHandle='player_'+Math.random().toString(36).slice(2,6);
+let lbRealEntries=[];
+let lbSubmitted=false;
+let lbLastSubmitAt=0;
+let lbRank=0;
+let lbFetched=false;
+
+function getBossLevel(){
+  for(let i=BOSS_LEVELS.length-1;i>=0;i--){
+    if(total>=BOSS_LEVELS[i].at)return i;
+  }
+  return 0;
+}
+
+function getBossCtx(){
+  if(currentMode!=='boss')return 4;
+  return BOSS_LEVELS[getBossLevel()].ctx;
+}
+
+function updateBossUI(){
+  if(currentMode!=='boss')return;
+  const lvl=getBossLevel();
+  const b=BOSS_LEVELS[lvl];
+  const acc=total>0?Math.round(hits/total*100):0;
+  document.getElementById('boss-lvl').textContent=b.name;
+  document.getElementById('boss-lvl').className='lvl'+(lvl>=4?' max':'');
+  document.getElementById('boss-face').textContent=b.face;
+  const hp=document.getElementById('boss-hp');
+  hp.style.width=Math.min(acc,100)+'%';
+  hp.className='boss-hp-fill '+(lvl>=4?'max':acc>=65?'high':acc>=50?'mid':'low');
+  if(lvl>bossLastLevel){
+    bossLastLevel=lvl;
+    const msgEl=document.getElementById('boss-msg');
+    msgEl.textContent=b.msg;
+    msgEl.style.animation='none';void msgEl.offsetHeight;
+    msgEl.style.animation='bossFlash .4s ease';
+    showBanner({at:b.at,tier:'boss',icon:b.face},b.name,acc);
+    setTimeout(()=>{msgEl.textContent='';},3000);
+  }
+}
+
+function getTrophyTitle(aiAcc){
+  if(aiAcc<45) return 'Chaos Agent';
+  if(aiAcc<55) return 'Wild Card';
+  if(aiAcc<65) return 'Pattern Dancer';
+  if(aiAcc<75) return 'Pattern Human';
+  return 'Open Book';
+}
+
+function renderHearts(){
+  const el=document.getElementById('survival-hearts');
+  el.innerHTML='';
+  for(let i=0;i<survivalMaxLives;i++){
+    const h=document.createElement('span');
+    h.className='heart'+(i>=survivalLives?' lost':'');
+    h.textContent=i<survivalLives?'❤️':'🖤';
+    el.appendChild(h);
+  }
+  document.getElementById('survival-score').textContent=total;
+}
+
+function survivalHit(){
+  if(currentMode!=='survival'||survivalDead)return;
+  survivalLives--;
+  renderHearts();
+  if(survivalLives<=0){
+    survivalDead=true;
+    const acc=total>0?Math.round(hits/total*100):0;
+    document.getElementById('go-picks').textContent=total;
+    document.getElementById('go-acc').textContent=acc;
+    document.getElementById('game-over').style.display='flex';
+  }
+}
+
+function survivalBonusCheck(){
+  if(currentMode!=='survival'||survivalDead)return;
+  const milestone=Math.floor(total/25);
+  if(milestone>survivalLastBonus&&survivalLives<survivalMaxLives){
+    survivalLastBonus=milestone;
+    survivalLives++;
+    renderHearts();
+    const hearts=document.getElementById('survival-hearts').children;
+    if(hearts[survivalLives-1])hearts[survivalLives-1].classList.add('bonus');
+    showBanner({at:total,tier:'gold',icon:'❤️'},'Bonus Life',Math.round(hits/total*100));
+  }
+}
+
+function getGrade(aiAcc){
+  for(const g of GRADES){if(aiAcc<=g.max)return g;}
+  return GRADES[GRADES.length-1];
+}
+function gradeColor(cls){
+  return cls==='gr-a'?'var(--hit)':cls==='gr-b'?'var(--accent)':cls==='gr-c'?'var(--streak)':'var(--fail)';
+}
+function updateGradeUI(){
+  if(currentMode!=='grade')return;
+  document.getElementById('grade-q').textContent=`Question ${total}/${GRADE_TOTAL}`;
+  document.getElementById('grade-fill').style.width=(total/GRADE_TOTAL*100)+'%';
+  if(total>=5){
+    const g=getGrade(Math.round(hits/total*100));
+    const el=document.getElementById('grade-live');
+    el.textContent=g.letter;el.style.color=gradeColor(g.cls);
+  }
+}
+function gradeCheck(){
+  if(currentMode!=='grade'||gradeDone)return;
+  if(total>=GRADE_TOTAL){
+    gradeDone=true;
+    const aiAcc=Math.round(hits/total*100);
+    const g=getGrade(aiAcc);
+    document.getElementById('grade-letter').textContent=g.letter;
+    document.getElementById('grade-letter').className='grade-letter '+g.cls;
+    document.getElementById('grade-comment').textContent=g.comment;
+    document.getElementById('grade-acc').textContent=aiAcc;
+    document.getElementById('grade-result').style.display='flex';
+    showBanner({at:GRADE_TOTAL,tier:g.cls==='gr-a'?'gold':g.cls==='gr-b'?'silver':'bronze',icon:'📝'},g.letter+' — '+g.comment,aiAcc);
+  }
+}
+
+function updateStreakBreakerUI(){
+  if(currentMode!=='streaks')return;
+  const cls=sbStreak>=7?'s-crit':sbStreak>=5?'s-hot':sbStreak>=3?'s-warm':'s-safe';
+  const fill=document.getElementById('sb-fill');
+  fill.style.width=Math.min(sbStreak/10*100,100)+'%';
+  fill.className='sb-streak-fill '+cls;
+  const num=document.getElementById('sb-streak-num');
+  num.textContent=sbStreak;
+  num.className='sb-streak-num '+cls;
+  document.getElementById('sb-breaks').textContent=sbBreaks;
+  document.getElementById('sb-points').textContent=sbPoints;
+  document.getElementById('sb-best').textContent=sbBestBreak;
+}
+function showBreakMsg(len){
+  const msg=document.getElementById('sb-msg');
+  const labels=['','','Nice!','Good break!','Great break!','Huge break!','Monster break!','LEGENDARY!'];
+  msg.textContent=`💥 ${len}-streak broken! +${len}pts ${labels[Math.min(len,labels.length-1)]||''}`;
+  msg.style.animation='none';void msg.offsetHeight;
+  msg.style.animation='sbBreakFlash .5s ease';
+  setTimeout(()=>{msg.textContent='';},2000);
+}
+async function fetchLeaderboard(){
+  try{
+    const r=await fetch('/api/scores');
+    const d=await r.json();
+    lbRealEntries=d.entries||[];
+    lbFetched=true;
+    renderLeaderboard();
+  }catch(e){lbRealEntries=[];lbFetched=true;}
+}
+async function submitScore(){
+  if(total<50)return;
+  const score=100-Math.round(hits/total*100);
+  try{
+    const r=await fetch('/api/scores',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({id:lbSessionId,name:lbHandle,score,picks:total})
+    });
+    const d=await r.json();
+    lbRank=d.rank;
+    lbSubmitted=true;
+    lbLastSubmitAt=total;
+    await fetchLeaderboard();
+    showNameInput();
+  }catch(e){}
+}
+function showNameInput(){
+  const el=document.getElementById('lb-you');
+  el.style.display='flex';
+  document.getElementById('lb-you-rank').textContent=`#${lbRank}`;
+  document.getElementById('lb-you-name').value=lbHandle;
+}
+function renderLeaderboard(){
+  if(currentMode!=='leaderboard')return;
+  const list=document.getElementById('lb-list');
+  const qualify=document.getElementById('lb-qualify');
+  let entries=[...lbRealEntries];
+  if(entries.length<15){
+    const realScores=new Set(entries.map(e=>e.score));
+    const fakes=LB_FAKE.filter(f=>!realScores.has(f.score));
+    entries=[...entries,...fakes];
+  }
+  entries.sort((a,b)=>b.score-a.score);
+  if(!lbSubmitted&&total<50){
+    qualify.textContent=`${50-total} more picks to qualify`;
+    qualify.style.display='block';
+  }else if(!lbSubmitted&&total>=50){
+    entries.push({id:lbSessionId,name:lbHandle,score:100-Math.round(hits/total*100),picks:total});
+    entries.sort((a,b)=>b.score-a.score);
+    qualify.style.display='none';
+  }else{
+    qualify.style.display='none';
+  }
+  const myIdx=entries.findIndex(e=>e.id===lbSessionId);
+  let start=0;
+  if(myIdx>=0)start=Math.max(0,Math.min(myIdx-4,entries.length-10));
+  const visible=entries.slice(start,start+10);
+  list.innerHTML=visible.map((e,i)=>{
+    const rank=start+i+1;
+    const isYou=e.id===lbSessionId;
+    return `<div class="lb-row${isYou?' you':''}"><span class="lb-rank${rank<=3?' top3':''}">#${rank}</span><span class="lb-name">${isYou?'→ '+lbHandle:e.name}</span><span class="lb-score">${e.score}</span><span class="lb-picks">${e.picks}p</span></div>`;
+  }).join('');
+  const youRow=list.querySelector('.you');
+  if(youRow)youRow.scrollIntoView({block:'nearest'});
+}
+
+function resetGame(){
+  hist=[];ctxMap={};total=0;hits=0;chartData=[];locked=false;lastPickTime=0;projSteps=0;
+  userPickData=[];aiPredData=[];
+  trophiesAwarded=[];bossLevel=0;bossLastLevel=0;
+  survivalLives=3;survivalDead=false;survivalLastBonus=0;
+  gradeDone=false;
+  sbStreak=0;sbBreaks=0;sbPoints=0;sbBestBreak=0;
+  lbSubmitted=false;lbLastSubmitAt=0;lbRank=0;lbFetched=false;lbRealEntries=[];
+  lbSessionId='ses_'+Math.random().toString(36).slice(2,10);
+  lbHandle='player_'+Math.random().toString(36).slice(2,6);
+  document.getElementById('game-over').style.display='none';
+  document.getElementById('grade-result').style.display='none';
+  document.getElementById('pct').textContent='—';
+  document.getElementById('pct').className='pct wait';
+  document.getElementById('doom').textContent='🧠';
+  document.getElementById('res').textContent='';
+  document.getElementById('info').textContent='Tap or press ← → to start';
+  document.getElementById('chart').innerHTML='<div class="chart-empty">Chart builds as you play</div>';
+  document.getElementById('pick-seq').innerHTML='';
+  document.getElementById('pick-seq-count').textContent='';
+  document.getElementById('trophy-shelf').innerHTML='';
+  document.getElementById('boss-msg').textContent='';
+  document.getElementById('sb-msg').textContent='';
+  document.getElementById('lb-you').style.display='none';
+  updateModeUI();
+}
+
+const MODE_INST={
+  vanilla:'Pick left or right — the AI learns your pattern and predicts your next move',
+  trophies:'Earn trophies at 25, 50, 100, and 200 picks based on how predictable you are',
+  boss:'The AI levels up every 50 picks, reading deeper into your pattern history',
+  survival:'You have 3 hearts — lose one each time the AI predicts you correctly',
+  grade:'50-pick exam — get graded on how unpredictable you are',
+  streaks:'Break the AI prediction streaks — longer streaks broken = more points',
+  leaderboard:'Climb the chaos leaderboard — be unpredictable to rank up (50 picks to qualify)',
+};
+
+function updateModeUI(){
+  document.getElementById('mode-inst').textContent=MODE_INST[currentMode]||'';
+  document.getElementById('trophy-shelf').style.display=currentMode==='trophies'?'flex':'none';
+  document.getElementById('boss-bar').style.display=currentMode==='boss'?'block':'none';
+  document.getElementById('survival-bar').style.display=currentMode==='survival'?'block':'none';
+  document.getElementById('grade-bar').style.display=currentMode==='grade'?'block':'none';
+  document.getElementById('streak-breaker-bar').style.display=currentMode==='streaks'?'block':'none';
+  document.getElementById('leaderboard-bar').style.display=currentMode==='leaderboard'?'block':'none';
+  if(currentMode==='survival'){renderHearts();}
+  if(currentMode==='grade'){
+    document.getElementById('grade-q').textContent=`Question 0/${GRADE_TOTAL}`;
+    document.getElementById('grade-fill').style.width='0%';
+    const gl=document.getElementById('grade-live');gl.textContent='—';gl.style.color='';
+  }
+  if(currentMode==='boss'){
+    const b=BOSS_LEVELS[0];
+    document.getElementById('boss-lvl').textContent=b.name;
+    document.getElementById('boss-face').textContent=b.face;
+    document.getElementById('boss-hp').style.width='0%';
+    document.getElementById('boss-hp').className='boss-hp-fill low';
+  }
+  if(currentMode==='streaks'){
+    updateStreakBreakerUI();
+  }
+  if(currentMode==='leaderboard'){
+    if(!lbFetched){fetchLeaderboard();}
+    renderLeaderboard();
+  }
+}
+updateModeUI();
+
+function checkTrophies(){
+  if(currentMode!=='trophies')return;
+  for(const m of TROPHY_MILESTONES){
+    if(total===m.at&&!trophiesAwarded.includes(m.at)){
+      trophiesAwarded.push(m.at);
+      const aiAcc=Math.round(hits/total*100);
+      const title=getTrophyTitle(aiAcc);
+      addTrophy(m,title,aiAcc);
+      showBanner(m,title,aiAcc);
+    }
+  }
+}
+
+function addTrophy(m,title,aiAcc){
+  const shelf=document.getElementById('trophy-shelf');
+  const el=document.createElement('div');
+  el.className=`trophy ${m.tier}`;
+  el.innerHTML=`
+    <div class="trophy-icon">${m.icon}</div>
+    <div class="trophy-label">${title}</div>
+    <div class="trophy-picks">${m.at} picks · ${aiAcc}%</div>
+  `;
+  shelf.appendChild(el);
+}
+
+function showBanner(m,title,aiAcc){
+  const banner=document.getElementById('trophy-banner');
+  document.getElementById('banner-icon').textContent=m.icon;
+  document.getElementById('banner-title').textContent=title;
+  document.getElementById('banner-sub').textContent=`${m.at} picks · AI accuracy: ${aiAcc}%`;
+  banner.classList.remove('show');
+  void banner.offsetHeight;
+  banner.classList.add('show');
+  setTimeout(()=>banner.classList.remove('show'),2400);
+}
+
+let lastPredCtx=0;
+function predict(){
+  const maxCtx=getBossCtx();
+  for(let n=Math.min(maxCtx,hist.length);n>=1;n--){
+    const k=hist.slice(-n).join(''),e=ctxMap[k];
+    if(e&&e.L+e.R>=2){
+      lastPredCtx=n;
+      if(e.L>e.R)return 'L';if(e.R>e.L)return 'R';return Math.random()<.5?'L':'R';
+    }
+  }
+  lastPredCtx=0;
+  if(hist.length>2){const lc=hist.filter(h=>h==='L').length;return lc>=hist.length-lc?'L':'R';}
+  return Math.random()<.5?'L':'R';
+}
+function learn(c){
+  const maxCtx=Math.max(getBossCtx(),4);
+  for(let n=1;n<=Math.min(maxCtx,hist.length);n++){
+    const k=hist.slice(-n).join('');
+    if(!ctxMap[k])ctxMap[k]={L:0,R:0};ctxMap[k][c]++;
+  }
+  hist.push(c);
+}
+function rollingAcc(){if(!total)return null;const n=Math.min(ROLL,chartData.length);return Math.round(chartData.slice(-n).filter(Boolean).length/n*100);}
+function getStreak(){let s=0;for(let i=chartData.length-1;i>=0;i--){if(chartData[i])s++;else break;}return s;}
+function statusFace(a){if(a===null)return '🧠';if(a>=80)return '😎';if(a>=65)return '😏';if(a>=50)return '🙂';if(a>=35)return '😬';if(a>=20)return '😰';return '💀';}
+
+function projectTrend(data,steps){
+  if(data.length<5||steps<1)return [];
+  const raw=[];
+  for(let i=Math.max(0,data.length-10);i<data.length;i++){const s=Math.max(0,i+1-ROLL),w=data.slice(s,i+1);raw.push(w.filter(Boolean).length/w.length*100);}
+  const n=raw.length;let sx=0,sy=0,sxy=0,sxx=0;
+  for(let i=0;i<n;i++){sx+=i;sy+=raw[i];sxy+=i*raw[i];sxx+=i*i;}
+  const d=n*sxx-sx*sx;if(!d)return [];
+  const slope=(n*sxy-sx*sy)/d,b=(sy-slope*sx)/n,out=[];
+  for(let i=1;i<=steps;i++)out.push(Math.max(0,Math.min(100,Math.round(b+slope*(n-1+i)))));
+  return out;
+}
+function updateSeqCount(){
+  const el=document.getElementById('pick-seq');
+  const n=el.querySelectorAll('.pick-sq:not(.popping)').length;
+  document.getElementById('pick-seq-count').textContent=n>0?n:'';
+}
+function addPickSquare(side){
+  const el=document.getElementById('pick-seq');
+  const sq=document.createElement('div');
+  sq.className='pick-sq '+(side==='L'?'l':'r')+' new';
+  el.appendChild(sq);
+  while(el.children.length>80){el.removeChild(el.firstChild);}
+  updateSeqCount();
+}
+
+function collapseMatched(count){
+  const el=document.getElementById('pick-seq');
+  const len=el.children.length;
+  if(len<2||count<1)return;
+  const start=Math.max(0,len-1-count);
+  const end=len-1;
+  for(let i=start;i<end;i++){
+    const sq=el.children[i];
+    if(sq&&!sq.classList.contains('popping')){
+      sq.classList.add('popping');
+    }
+  }
+  setTimeout(()=>{
+    const popping=el.querySelectorAll('.popping');
+    popping.forEach(sq=>sq.remove());
+    updateSeqCount();
+  },500);
+}
+
+function rollingPctRight(arr,idx){
+  const s=Math.max(0,idx+1-ROLL),w=arr.slice(s,idx+1);
+  return Math.round(w.filter(v=>v==='R').length/w.length*100);
+}
+function drawChart(){
+  const el=document.getElementById('chart');
+  if(userPickData.length<2){el.innerHTML='<div class="chart-empty">Chart builds as you play</div>';return;}
+  const userRaw=[],aiRaw=[];
+  for(let i=0;i<userPickData.length;i++){userRaw.push(rollingPctRight(userPickData,i));aiRaw.push(rollingPctRight(aiPredData,i));}
+  const show=userRaw.slice(-35),aiShow=aiRaw.slice(-35);
+  const proj=projectTrend(userRaw,projSteps),tot=show.length+proj.length;
+  const W=320,H=32,P=2,step=(W-P*2)/Math.max(tot-1,1);
+  const yOf=v=>P+(H-P*2)*(1-v/100);
+  const rPts=show.map((v,i)=>`${(P+i*step).toFixed(1)},${yOf(v).toFixed(1)}`);
+  const aiPts=aiShow.map((v,i)=>`${(P+i*step).toFixed(1)},${yOf(v).toFixed(1)}`);
+  const last=rPts[rPts.length-1].split(',');
+  const y50=yOf(50).toFixed(1);
+  let pSvg='';
+  if(proj.length){const pp=[rPts[rPts.length-1]];for(let i=0;i<proj.length;i++)pp.push(`${(P+(show.length+i)*step).toFixed(1)},${yOf(proj[i]).toFixed(1)}`);pSvg=`<polyline points="${pp.join(' ')}" fill="none" stroke="var(--accent)" stroke-width="1.2" stroke-dasharray="3,3" opacity=".35" stroke-linejoin="round"/>`;}
+  el.innerHTML=`<div class="chart-wrap"><span class="chart-50" style="top:${parseFloat(y50)-4}px">50%</span>
+  <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block" preserveAspectRatio="none">
+  <line x1="${P}" y1="${y50}" x2="${W-P}" y2="${y50}" stroke="var(--fg-muted)" stroke-dasharray="3,3" opacity=".15"/>
+  <polygon points="${P},${H-P} ${rPts.join(' ')} ${last[0]},${H-P}" fill="rgba(32,212,154,.06)"/>
+  <polyline points="${aiPts.join(' ')}" fill="none" stroke="var(--fail)" stroke-width="1.2" opacity=".4" stroke-linejoin="round" stroke-linecap="round"/>
+  <polyline points="${rPts.join(' ')}" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+  ${pSvg}<circle cx="${last[0]}" cy="${last[1]}" r="3" fill="var(--accent)"><animate attributeName="r" values="2.5;4;2.5" dur="2s" repeatCount="indefinite"/></circle>
+  </svg></div>`;
+}
+setInterval(()=>{if(Date.now()-lastPickTime>1200&&projSteps>0){projSteps=Math.max(0,projSteps-1);drawChart();}},400);
+
+function handlePick(side){
+  if(locked)return;
+  if(currentMode==='survival'&&survivalDead)return;
+  if(currentMode==='grade'&&gradeDone)return;
+  locked=true;
+  if(!hasScrolled){
+    hasScrolled=true;
+    document.querySelector('.mode-bar').scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  const now=Date.now(),dt=now-lastPickTime;lastPickTime=now;
+  projSteps=dt<400?10:dt<800?8:dt<1500?6:4;
+  const pred=predict(),hit=pred===side;learn(side);total++;if(hit)hits++;chartData.push(hit);
+  userPickData.push(side);aiPredData.push(pred);
+  const ra=rollingAcc(),st=getStreak();
+  const el=document.getElementById(side==='L'?'sl':'sr');
+  el.classList.add(hit?'flash-hit':'flash-miss');
+  const resEl=document.getElementById('res');resEl.textContent=hit?'✓':'✗';resEl.className='res '+(hit?'hit':'miss');
+  const pctEl=document.getElementById('pct');
+  if(ra!==null){pctEl.textContent=ra+'%';pctEl.className='pct '+(ra>=65?'hot':ra>=45?'warm':'cool');pctEl.style.animation='none';pctEl.offsetHeight;pctEl.style.animation='pulse 1.8s ease-in-out infinite';}
+  const doomEl=document.getElementById('doom');
+  doomEl.textContent=st>=3?'🔥':(hit?['😎','😏','🎯'][Math.floor(Math.random()*3)]:['😮','🤨','😵‍💫'][Math.floor(Math.random()*3)]);
+  let txt=`Pick ${total}`;if(st>=3)txt+=` · <span class="stk">🔥 ${st}</span>`;
+  document.getElementById('info').innerHTML=txt;
+  drawChart();
+  addPickSquare(side);
+  if(hit&&lastPredCtx>0)collapseMatched(lastPredCtx);
+  checkTrophies();
+  updateBossUI();
+  if(currentMode==='survival'){
+    if(hit)survivalHit();
+    survivalBonusCheck();
+    renderHearts();
+  }
+  if(currentMode==='grade'){
+    updateGradeUI();
+    gradeCheck();
+  }
+  if(currentMode==='streaks'){
+    if(hit){sbStreak++;}else{
+      if(sbStreak>=2){sbBreaks++;sbPoints+=sbStreak;if(sbStreak>sbBestBreak)sbBestBreak=sbStreak;showBreakMsg(sbStreak);}
+      sbStreak=0;
+    }
+    updateStreakBreakerUI();
+  }
+  if(currentMode==='leaderboard'){
+    renderLeaderboard();
+    if(total===50||(lbSubmitted&&total-lbLastSubmitAt>=25)){submitScore();}
+  }
+  if(typeof trackMilestone==='function')trackMilestone();
+  setTimeout(()=>{el.classList.remove('flash-hit','flash-miss');doomEl.textContent=statusFace(ra);resEl.textContent='';locked=false;},200);
+}
+
+const LS={p:847+Math.floor((Date.now()/7777)%300),n:14982+Math.floor((Date.now()/1111)%4e3),a:66};
+function tickLS(){
+  LS.p=Math.max(600,Math.min(1400,LS.p+Math.floor(Math.random()*7)-3));LS.n+=Math.floor(Math.random()*5)+1;
+  if(Math.random()<.12)LS.a=Math.max(62,Math.min(71,LS.a+(Math.random()<.5?1:-1)));
+  const el=document.getElementById('live');
+  if(el)el.innerHTML=`<span class="live-dot"></span>${LS.p.toLocaleString()} playing<span class="live-sep">·</span>${LS.a}% avg<span class="live-sep">·</span>${LS.n.toLocaleString()} total`;
+}
+setInterval(tickLS,3500);tickLS();
+
+document.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'){e.preventDefault();handlePick('L');}if(e.key==='ArrowRight'){e.preventDefault();handlePick('R');}});
+document.getElementById('sl').addEventListener('click',()=>handlePick('L'));
+document.getElementById('sr').addEventListener('click',()=>handlePick('R'));
+document.getElementById('sl').addEventListener('touchstart',e=>{e.preventDefault();handlePick('L');},{passive:false});
+document.getElementById('sr').addEventListener('touchstart',e=>{e.preventDefault();handlePick('R');},{passive:false});
+document.getElementById('go-retry').addEventListener('click',()=>resetGame());
+document.getElementById('grade-retry').addEventListener('click',()=>resetGame());
+document.getElementById('lb-you-save').addEventListener('click',()=>{
+  const input=document.getElementById('lb-you-name');
+  const newName=input.value.trim().replace(/[<>"'&]/g,'').slice(0,20);
+  if(newName.length>0){lbHandle=newName;submitScore();}
+});
+document.getElementById('lb-you-name').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){document.getElementById('lb-you-save').click();}
+});
+</script>
+
+<script>
+// Engagement tracking via Umami custom events
+const tracked={10:false,25:false,50:false,100:false};
+function trackMilestone(){
+  if(typeof umami==='undefined')return;
+  for(const m of [10,25,50,100]){
+    if(total>=m&&!tracked[m]){
+      tracked[m]=true;
+      const ra=rollingAcc();
+      umami.track('mind-reader-milestone',{picks:m,accuracy:ra,streak:getStreak(),mode:currentMode});
+    }
+  }
+}
+</script>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BXL0V8163H"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-BXL0V8163H');
+</script>
+<script defer src="https://stats.jeffyclassify.com/script.js" data-website-id="f9036a1c-0cc2-4e1d-ac25-2eb9e5dfc530"></script>
+<script defer src="https://stats.jeffyclassify.com/recorder.js" data-website-id="f9036a1c-0cc2-4e1d-ac25-2eb9e5dfc530"></script>
+</body>
+</html>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4bc70e2c01a94c73b74392e4234840661791215815920" integrity="sha512-L0ha0OXavK/8okipN9F8BtP84dg9DUhPERbBXzwI6dgTA55d2+yweo3pn5CSFYs45/r8md2+xvUPtTdvTNRfjA==" data-cf-beacon='{"version":"2024.11.0","token":"ad0b1a41938f436ebfd31a32517ece43","r":1,"spa":2}' crossorigin="anonymous"></script>

@@ -1,0 +1,44 @@
+# Jeffy
+
+> Jeffy is an open-source Python library for text classification using logistic regression on frozen sentence embeddings. It ships 68 pretrained classifiers covering sentiment, intent, spam detection, emotion, topic classification, and more across 51 languages. No GPU required, under 80ms latency, runs on CPU. Install with `pip install jeffy-classify`.
+
+Jeffy works by embedding text with a frozen sentence transformer (BAAI/bge-large-en-v1.5 for English, intfloat/multilingual-e5-large for other languages), then classifying with a logistic regression head. You can use any of the 68 pretrained classifiers or train your own with as few as 20 labeled examples.
+
+## Docs
+
+- [GitHub Repository](https://github.com/nicobrenner/jeffy): Source code, README, and installation instructions
+- [PyPI Package](https://pypi.org/project/jeffy-classify/): Install with `pip install jeffy-classify`
+- [API Documentation](https://playground.jeffyclassify.com/docs): REST API reference for the hosted playground
+- [Benchmark Results](https://jeffyclassify.com/benchmark/): Interactive comparison of Jeffy vs 15 other models (LLMs, decision models, traditional ML) across 3 tasks
+
+## Guides
+
+- [When LLMs Fail at Classification](https://jeffyclassify.com/blog/when-llms-fail-at-classification/): Why logistic regression beats billion-parameter models on many-class classification tasks
+- [Can AI Read Your Mind?](https://jeffyclassify.com/blog/mind-reader/): Interactive demo with 7 game modes showing real-time classification
+
+## Quick Start
+
+```python
+from jeffy import Engine
+
+engine = Engine()
+result = engine.predict("sst2", "This movie was amazing!")
+print(result)  # {"label": "positive", "confidence": 0.99}
+```
+
+## Pretrained Classifiers
+
+- [Sentiment Analysis](https://playground.jeffyclassify.com): sst2 (2-class), tweet_eval_sentiment (3-class), imdb (2-class)
+- [Intent Detection](https://playground.jeffyclassify.com): massive_intent (60 intents, 51 languages), clinc_oos (151 intents with out-of-scope)
+- [Spam Detection](https://playground.jeffyclassify.com): sms_spam (2-class, 99.1% accuracy)
+- [Emotion](https://playground.jeffyclassify.com): emotion (6-class), tweet_eval_emotion (4-class)
+- [Topic Classification](https://playground.jeffyclassify.com): ag_news (4-class), dbpedia (14-class)
+- [Banking](https://playground.jeffyclassify.com): banking77 (77 intents, 94.3% accuracy)
+- [Medication OCR](https://playground.jeffyclassify.com): medication_name (50 drugs), dosage_form (10 forms)
+- [Natural Language Inference](https://playground.jeffyclassify.com): snli (3-class)
+- [Offensive Language](https://playground.jeffyclassify.com): tweet_eval_offensive (2-class)
+
+## Optional
+
+- [Interactive Playground](https://playground.jeffyclassify.com): Try all classifiers in the browser with live demos
+- [Flock Simulation](https://nicobrenner.github.io/flock/): Boids flocking with Jeffy-classified behavior

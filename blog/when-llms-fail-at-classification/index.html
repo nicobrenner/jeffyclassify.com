@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>When LLMs Fail at Classification — Jeffy</title>
+<meta name="description" content="Benchmarking 16 models on text classification: LLMs, decision models, and classifiers. On 77-class problems, embedding + logistic regression wins by 14+ points.">
+<link rel="icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:title" content="When LLMs Fail at Classification">
+<meta property="og:description" content="16 models benchmarked. On 77-class problems, Jeffy (embedding + LR) gets 94.3% while the best LLM gets 68%. Not close.">
+<meta property="og:image" content="https://jeffyclassify.com/blog/when-llms-fail-at-classification/og.png">
+<meta property="og:url" content="https://jeffyclassify.com/blog/when-llms-fail-at-classification/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Jeffy">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="When LLMs Fail at Classification">
+<meta name="twitter:description" content="16 models benchmarked. On 77 classes, embedding + LR gets 94.3% vs best LLM at 68%.">
+<meta name="twitter:image" content="https://jeffyclassify.com/blog/when-llms-fail-at-classification/og.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0a0a0c;
+  --fg: #e0dfd8;
+  --fg-muted: #8a8880;
+  --surface: #141418;
+  --surface-raised: #1c1c22;
+  --border: #2a2a30;
+  --accent: #20d49a;
+  --accent-dim: #178c68;
+  --good: #4ade80;
+  --mid: #facc15;
+  --weak: #f87171;
+  --jev-orange: #ff6b35;
+  --llm-purple: #9b6dff;
+  --font-display: 'IBM Plex Mono', monospace;
+  --font-body: 'Source Sans 3', -apple-system, sans-serif;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  line-height: 1.65;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+h1 {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--accent);
+  margin: 2.5rem 0 0.3rem;
+  text-wrap: balance;
+}
+
+.dateline {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  color: var(--fg-muted);
+  margin-bottom: 1.5rem;
+}
+
+h2 {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--fg);
+  margin: 2.2rem 0 0.8rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+p { margin: 0.8rem 0; }
+
+a { color: var(--accent); text-underline-offset: 3px; }
+a:hover { color: #5ce8b8; }
+
+code {
+  font-family: var(--font-display);
+  font-size: 0.88em;
+  background: var(--surface);
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 18px;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  margin: 1rem 0;
+}
+
+pre code { background: none; padding: 0; font-size: inherit; }
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 1.5rem 0;
+}
+
+.stat-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.big-number {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.big-label {
+  font-size: 0.72rem;
+  color: var(--fg-muted);
+  line-height: 1.3;
+}
+
+.callout {
+  background: var(--surface-raised);
+  border-left: 3px solid var(--accent);
+  padding: 14px 18px;
+  border-radius: 0 8px 8px 0;
+  margin: 1.2rem 0;
+  font-size: 0.95rem;
+}
+
+.callout strong { color: var(--fg); }
+
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 1rem 0;
+}
+
+.chart-card canvas { width: 100% !important; }
+
+.legend {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  font-size: 0.7rem;
+  font-family: var(--font-display);
+  color: var(--fg-muted);
+}
+.legend i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+
+.table-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 1rem 0;
+}
+
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.results-table th {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-muted);
+  font-weight: 500;
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.results-table th:not(:first-child) { text-align: right; }
+
+.results-table td {
+  padding: 5px 12px;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.results-table tr:last-child td { border-bottom: none; }
+.results-table td:not(:first-child) { text-align: right; font-family: var(--font-display); font-size: 0.8rem; }
+
+.model-name {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+
+.results-table .jeffy-row td { color: var(--accent); font-weight: 600; }
+
+.bar-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.acc-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  width: 60px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.acc-bar > span { display: block; height: 100%; border-radius: 2px; }
+
+.ex-tabs { display: flex; gap: 0; border-bottom: 2px solid var(--border); }
+.ex-tab { padding: 7px 14px; font-size: 0.78rem; font-family: var(--font-display); font-weight: 500; cursor: pointer; color: var(--fg-muted); border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; background: none; }
+.ex-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.ex-panel { display: none; padding-top: 12px; }
+.ex-panel.active { display: block; }
+.dot-grid { display: flex; flex-wrap: wrap; gap: 3px; margin: 8px 0 6px; }
+.sample-dot { width: 12px; height: 12px; border-radius: 2px; cursor: pointer; transition: transform 0.1s; }
+.sample-dot:hover { transform: scale(1.6); z-index: 2; }
+.sample-dot.correct { background: var(--good); opacity: 0.85; }
+.sample-dot.wrong { background: var(--weak); opacity: 0.9; }
+.model-section { margin-bottom: 12px; }
+.model-section-head { font-family: var(--font-display); font-size: 0.78rem; font-weight: 600; color: var(--fg); margin-bottom: 3px; display: flex; align-items: center; gap: 6px; }
+.model-section-head .acc { font-weight: 400; color: var(--fg-muted); }
+.dot-legend { font-size: 0.72rem; color: var(--fg-muted); display: flex; gap: 12px; margin-bottom: 4px; }
+.dot-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 3px; vertical-align: middle; }
+
+.sample-tip { display: none; position: fixed; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; font-size: 0.76rem; line-height: 1.5; max-width: 300px; z-index: 100; pointer-events: none; box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+.sample-tip .st-text { color: var(--fg); margin-bottom: 3px; white-space: pre-wrap; word-break: break-word; }
+.sample-tip .st-ok { color: var(--good); font-family: var(--font-display); }
+.sample-tip .st-err { color: var(--weak); font-family: var(--font-display); }
+
+footer {
+  margin: 2.5rem 0 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  color: var(--fg-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+
+footer a { color: var(--accent-dim); }
+footer a:hover { color: var(--accent); }
+
+@media (max-width: 520px) {
+  .stat-row { grid-template-columns: repeat(2, 1fr); }
+  h1 { font-size: 1.3rem; }
+}
+</style>
+</head>
+<body>
+
+<h1>When LLMs fail at classification</h1>
+<div class="dateline">Oct 2026 · Nico Brenner</div>
+
+<p>
+  I built <a href="https://github.com/nicobrenner/jeffy">Jeffy</a>, an open-source text classifier that uses BGE-large embeddings + logistic regression. I wanted to know how it actually compares to LLMs, decision models, and other classifiers
+</p>
+<p>
+  So I benchmarked it against 15 models. 10 local LLMs (0.5B to 32B), the leading hosted decision model (Jev), two open-source decision models (Laya, GLiNER), and two traditional classifiers (SetFit, FastText)
+</p>
+<p>
+  tl;dr: on classification with many classes, a trained embedding + logistic regression wins. Not by a little. By a lot
+</p>
+
+<div class="stat-row">
+  <div class="stat-item">
+    <span class="big-number" style="color:var(--accent)">94.3%</span>
+    <span class="big-label">Jeffy on 77 classes</span>
+  </div>
+  <div class="stat-item">
+    <span class="big-number" style="color:var(--jev-orange)">80%</span>
+    <span class="big-label">Best competitor (Jev)</span>
+  </div>
+  <div class="stat-item">
+    <span class="big-number" style="color:var(--good)">118ms</span>
+    <span class="big-label">Local CPU, no API</span>
+  </div>
+  <div class="stat-item">
+    <span class="big-number" style="color:var(--mid)">$0</span>
+    <span class="big-label">Per prediction</span>
+  </div>
+</div>
+
+<h2>The chart that tells the whole story</h2>
+
+<p>Here's what happens as you add more classes. At 2 classes (binary sentiment), everyone's competitive. By 4, Jeffy starts pulling ahead. At 77, everything else collapses</p>
+
+<div class="chart-card">
+  <canvas id="ch-acc"></canvas>
+  <div class="legend" id="lg-acc"></div>
+</div>
+
+<div class="callout">
+  <strong>The crossover happens between 2 and 4 classes.</strong> By 77, even Jev (the best hosted decision model) gets 80% vs Jeffy's 94%. GLiNER gets 56%, Laya 38%. No LLM breaks 70%, regardless of size
+</div>
+
+<h2>Speed</h2>
+
+<p>Speed matters when you're classifying in a loop. Emails arriving, chat messages streaming, API requests hitting. Here's every model on banking77 (the hardest task):</p>
+
+<div class="chart-card">
+  <div style="max-height:560px"><canvas id="ch-lat"></canvas></div>
+</div>
+
+<p>
+  SetFit (6ms) and FastText (&lt;1ms) are faster, but they trade too much accuracy for it. At 77 classes SetFit drops to 54% and FastText to 1%. Jev is the closest on both speed and accuracy (134ms, 80%), but it's a hosted API: your data leaves your machine and you pay per call. Jeffy runs entirely on your CPU
+</p>
+
+<h2>The setup</h2>
+
+<p>Three tasks, picked for class count:</p>
+<ul style="margin:0.5rem 0 1rem;padding-left:1.4rem;line-height:1.8">
+  <li><strong>banking77</strong> - customer intent (77 classes). The real test</li>
+  <li><strong>ag_news</strong> - news topics (4 classes). Moderate</li>
+  <li><strong>sst2</strong> - binary sentiment (2 classes). The easy one</li>
+</ul>
+<p>
+  100 held-out samples per task. All LLMs via Ollama on the same machine, temperature 0, prompted with "reply with ONLY the category name." Decision models get the label set at call time. Jeffy, SetFit, and FastText trained on standard training splits
+</p>
+
+<h2>Full results by task</h2>
+
+<div id="tables"></div>
+
+<h2>Every single test sample</h2>
+
+<p>Each square is one sample. Green = correct, red = wrong. Hover for the text and prediction. Watch the green disappear as class count goes up</p>
+
+<div class="chart-card">
+  <div class="dot-legend">
+    <span><i style="background:var(--good)"></i>Correct</span>
+    <span><i style="background:var(--weak)"></i>Wrong</span>
+  </div>
+  <div class="ex-tabs" id="ex-tabs"></div>
+  <div id="ex-panels"></div>
+</div>
+<div class="sample-tip" id="tip"></div>
+
+<h2>Why decision models break down</h2>
+
+<p>
+  Decision models like Jev and Laya process every option in a single forward pass. At 2 or 4 classes, that works great. At 77, the options don't fit the model's attention window cleanly. Labels overlap semantically ("card not working" vs "contactless not working" vs "card payment not recognised") and the model has to somehow pick between dozens of near-synonyms it's never seen training data for
+</p>
+<p>
+  A trained classifier doesn't have this problem. It saw labeled examples of each intent during training. It learned the embedding-space boundaries between them. The 77-class case isn't harder to run. Same BGE embedding, same logistic regression, just more output classes
+</p>
+
+<h2>Run it yourself</h2>
+
+<p>Every number here is reproducible:</p>
+
+<pre><code><span style="color:var(--fg-muted)"># Install</span>
+pip install jeffy-classify datasets
+
+<span style="color:var(--fg-muted)"># Pull an LLM to compare</span>
+ollama pull phi4
+
+<span style="color:var(--fg-muted)"># Run the benchmark</span>
+python benchmarks/jeffybench.py --models phi4,mistral,llama3.1
+
+<span style="color:var(--fg-muted)"># Single task</span>
+python benchmarks/jeffybench.py --tasks banking77 --models phi4</code></pre>
+
+<h2>Bottom line</h2>
+
+<p>
+  LLMs are great generalists. Decision models are elegant for simple choices. But when you have labeled data and more than a handful of classes, a trained classifier wins on accuracy, speed, cost, and privacy. It's not even close
+</p>
+<p>
+  Jeffy is open source, runs on CPU, and the whole model for 77 classes is under 5MB. No GPU, no API key, no data leaving your machine
+</p>
+<p>
+  <a href="https://playground.jeffyclassify.com">Try 70 classifiers live</a> · <a href="https://github.com/nicobrenner/jeffy">Source</a>
+</p>
+
+<footer>
+  <a href="https://jeffyclassify.com">Jeffy</a>
+  <a href="https://playground.jeffyclassify.com">Playground</a>
+  <a href="https://github.com/nicobrenner/jeffy/tree/main/benchmarks">Benchmarks</a>
+  <a href="https://github.com/nicobrenner/jeffy"><svg id="star-icon" style="width:12px;height:12px;vertical-align:-1px;margin-right:1px;display:none" viewBox="0 0 16 16" fill="currentColor"><path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/></svg><span id="star-count"></span> on <svg style="width:14px;height:14px;vertical-align:-2px;margin:0 2px" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
+</footer>
+
+<script>
+var MODELS = [
+  { id: "jeffy", name: "Jeffy", color: "#20d49a" },
+  { id: "phi4_14b", name: "phi4 (14B)", color: "#9b6dff" },
+  { id: "gemma4_9.6b", name: "gemma4 (9.6B)", color: "#4a9eff" },
+  { id: "llama3.1_8b", name: "llama3.1 (8B)", color: "#7a4ddb" },
+  { id: "mistral_7b", name: "mistral (7B)", color: "#b070e0" },
+  { id: "gemma3_4b", name: "gemma3 (4B)", color: "#2d8cf0" },
+  { id: "phi4mini_3.8b", name: "phi4-mini (3.8B)", color: "#c090ff" },
+  { id: "llama3.2_3b", name: "llama3.2 (3B)", color: "#6a3dc0" },
+  { id: "phi_2.7b", name: "phi (2.7B)", color: "#a060d0" },
+  { id: "qwen2.5_0.5b", name: "qwen2.5 (0.5B)", color: "#50a0a0" },
+  { id: "qwen3_32b", name: "qwen3 (32B)", color: "#707580" },
+  { id: "setfit", name: "SetFit", color: "#e54dbf" },
+  { id: "fasttext", name: "FastText", color: "#b58942" },
+  { id: "laya", name: "Laya", color: "#ff6b8a" },
+  { id: "gliner", name: "GLiNER2.5", color: "#4ecdc4" },
+  { id: "jev", name: "Jev (hosted)", color: "#ff6b35" }
+];
+
+var TASKS = {
+  banking77: { n: 77, cat: "intent", results: [
+    { id: "jeffy", acc: 0.943, lat: 118 },
+    { id: "jev", acc: 0.80, lat: 134 },
+    { id: "phi4_14b", acc: 0.68, lat: 15400 },
+    { id: "gemma4_9.6b", acc: 0.68, lat: 696 },
+    { id: "gemma3_4b", acc: 0.64, lat: 956 },
+    { id: "llama3.1_8b", acc: 0.62, lat: 8900 },
+    { id: "gliner", acc: 0.56, lat: 1672 },
+    { id: "setfit", acc: 0.5425, lat: 6 },
+    { id: "phi4mini_3.8b", acc: 0.52, lat: 181 },
+    { id: "llama3.2_3b", acc: 0.46, lat: 143 },
+    { id: "mistral_7b", acc: 0.39, lat: 17000 },
+    { id: "laya", acc: 0.38, lat: 815 },
+    { id: "phi_2.7b", acc: 0.30, lat: 231 },
+    { id: "qwen2.5_0.5b", acc: 0.15, lat: 55 },
+    { id: "qwen3_32b", acc: 0.03, lat: 9500 },
+    { id: "fasttext", acc: 0.011, lat: 0.1 }
+  ]},
+  ag_news: { n: 4, cat: "topic", results: [
+    { id: "laya", acc: 0.94, lat: 273 },
+    { id: "jeffy", acc: 0.905, lat: 80 },
+    { id: "setfit", acc: 0.859, lat: 9 },
+    { id: "phi4_14b", acc: 0.83, lat: 493 },
+    { id: "jev", acc: 0.83, lat: 127 },
+    { id: "gemma4_9.6b", acc: 0.82, lat: 969 },
+    { id: "phi4mini_3.8b", acc: 0.81, lat: 176 },
+    { id: "mistral_7b", acc: 0.81, lat: 9000 },
+    { id: "gemma3_4b", acc: 0.79, lat: 496 },
+    { id: "llama3.1_8b", acc: 0.76, lat: 8400 },
+    { id: "llama3.2_3b", acc: 0.72, lat: 142 },
+    { id: "gliner", acc: 0.65, lat: 366 },
+    { id: "phi_2.7b", acc: 0.64, lat: 229 },
+    { id: "qwen2.5_0.5b", acc: 0.57, lat: 50 },
+    { id: "fasttext", acc: 0.372, lat: 0.1 },
+    { id: "qwen3_32b", acc: 0.21, lat: 9900 }
+  ]},
+  sst2: { n: 2, cat: "sentiment", results: [
+    { id: "jev", acc: 0.96, lat: 127 },
+    { id: "phi4_14b", acc: 0.95, lat: 286 },
+    { id: "gliner", acc: 0.93, lat: 336 },
+    { id: "jeffy", acc: 0.901, lat: 104 },
+    { id: "llama3.1_8b", acc: 0.90, lat: 15500 },
+    { id: "gemma3_4b", acc: 0.89, lat: 500 },
+    { id: "llama3.2_3b", acc: 0.89, lat: 115 },
+    { id: "mistral_7b", acc: 0.86, lat: 8400 },
+    { id: "laya", acc: 0.83, lat: 220 },
+    { id: "phi_2.7b", acc: 0.83, lat: 255 },
+    { id: "setfit", acc: 0.8142, lat: 7 },
+    { id: "gemma4_9.6b", acc: 0.79, lat: 623 },
+    { id: "phi4mini_3.8b", acc: 0.79, lat: 138 },
+    { id: "qwen3_32b", acc: 0.59, lat: 16700 },
+    { id: "fasttext", acc: 0.5734, lat: 0.1 },
+    { id: "qwen2.5_0.5b", acc: 0.50, lat: 51 }
+  ]}
+};
+
+function modelInfo(id) { return MODELS.find(function(m) { return m.id === id; }); }
+function fmtLat(ms) { return ms < 1 ? "<1ms" : ms < 1000 ? Math.round(ms) + "ms" : (ms/1000).toFixed(1) + "s"; }
+
+var taskIds = ["banking77", "ag_news", "sst2"];
+var classCounts = [77, 4, 2];
+var gColor = "#8a8880";
+var gridColor = "#2a2a30";
+
+var accDatasets = MODELS.map(function(model) {
+  var points = taskIds.map(function(tid, i) {
+    var res = TASKS[tid].results.find(function(r) { return r.id === model.id; });
+    return res ? { x: classCounts[i], y: res.acc * 100 } : null;
+  }).filter(Boolean);
+  return {
+    label: model.name, data: points,
+    borderColor: model.color, backgroundColor: model.color + "20",
+    borderWidth: model.id === "jeffy" ? 3.5 : 1.8,
+    pointRadius: model.id === "jeffy" ? 7 : 3.5,
+    pointHoverRadius: 8, tension: 0.3, fill: false,
+    order: model.id === "jeffy" ? 0 : 1
+  };
+});
+
+new Chart(document.getElementById("ch-acc"), {
+  type: "line", data: { datasets: accDatasets },
+  options: {
+    responsive: true, maintainAspectRatio: true, aspectRatio: 2,
+    interaction: { mode: "nearest", intersect: false },
+    scales: {
+      x: {
+        type: "logarithmic",
+        title: { display: true, text: "Number of classes", color: gColor, font: { family: "'IBM Plex Mono',monospace", size: 11 } },
+        ticks: { color: gColor, callback: function(v) { return [2,4,77].indexOf(v)>=0 ? v : ""; }, font: { family: "'IBM Plex Mono',monospace", size: 10 } },
+        grid: { color: gridColor }, min: 1.5, max: 100
+      },
+      y: {
+        title: { display: true, text: "Accuracy %", color: gColor, font: { family: "'IBM Plex Mono',monospace", size: 11 } },
+        ticks: { color: gColor, callback: function(v) { return v+"%"; }, font: { family: "'IBM Plex Mono',monospace", size: 10 } },
+        grid: { color: gridColor }, min: 0, max: 100
+      }
+    },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: "#1c1c22", titleColor: "#e0dfd8", bodyColor: "#e0dfd8",
+        borderColor: gridColor, borderWidth: 1,
+        titleFont: { family: "'IBM Plex Mono',monospace" },
+        bodyFont: { family: "'IBM Plex Mono',monospace" },
+        callbacks: {
+          title: function(items) { return items[0].raw.x + " classes"; },
+          label: function(item) { return " " + item.dataset.label + ": " + item.raw.y.toFixed(1) + "%"; }
+        }
+      }
+    }
+  }
+});
+
+var lgEl = document.getElementById("lg-acc");
+MODELS.forEach(function(m) {
+  var s = document.createElement("span");
+  s.innerHTML = '<i style="background:'+m.color+'"></i>' + m.name;
+  lgEl.appendChild(s);
+});
+
+var latModels = [];
+TASKS.banking77.results.forEach(function(r) {
+  var m = modelInfo(r.id);
+  if (m) latModels.push({ name: m.name, lat: r.lat, color: m.color });
+});
+latModels.sort(function(a,b) { return a.lat - b.lat; });
+
+new Chart(document.getElementById("ch-lat"), {
+  type: "bar",
+  data: {
+    labels: latModels.map(function(d) { return d.name; }),
+    datasets: [{
+      data: latModels.map(function(d) { return d.lat; }),
+      backgroundColor: latModels.map(function(d) { return d.color + "cc"; }),
+      borderColor: latModels.map(function(d) { return d.color; }),
+      borderWidth: 1, borderRadius: 4
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: true, aspectRatio: 1.1,
+    indexAxis: "y",
+    scales: {
+      x: {
+        type: "logarithmic",
+        title: { display: true, text: "Latency (ms, log scale)", color: gColor, font: { family: "'IBM Plex Mono',monospace", size: 10 } },
+        ticks: { color: gColor, callback: function(v) { return v >= 1000 ? (v/1000)+"s" : v+"ms"; }, font: { family: "'IBM Plex Mono',monospace", size: 9 } },
+        grid: { color: gridColor }
+      },
+      y: {
+        ticks: { color: gColor, font: { family: "'IBM Plex Mono',monospace", size: 10 } },
+        grid: { display: false }
+      }
+    },
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: function(ctx) { return fmtLat(ctx.raw); } } }
+    }
+  }
+});
+
+var tablesEl = document.getElementById("tables");
+taskIds.forEach(function(tid) {
+  var task = TASKS[tid];
+  var sorted = task.results.slice().sort(function(a,b) { return b.acc - a.acc; });
+  var card = document.createElement("div");
+  card.className = "table-card";
+  var rows = sorted.map(function(r) {
+    var m = modelInfo(r.id);
+    if (!m) return "";
+    var isJ = r.id === "jeffy";
+    var pct = (r.acc*100).toFixed(1)+"%";
+    var bw = Math.round(r.acc * 100);
+    return '<tr class="'+(isJ?"jeffy-row":"")+'"><td><span class="model-name"><span class="dot" style="background:'+m.color+'"></span>'+m.name+'</span></td>' +
+      '<td><div class="bar-cell"><span>'+pct+'</span><span class="acc-bar"><span style="width:'+bw+'%;background:'+m.color+'"></span></span></div></td>' +
+      '<td>'+fmtLat(r.lat)+'</td></tr>';
+  }).join("");
+  card.innerHTML = '<div style="padding:10px 12px 6px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:baseline"><span style="font-family:var(--font-display);font-weight:600;font-size:0.9rem;color:var(--fg)">'+tid+'</span><span style="font-size:0.75rem;color:var(--fg-muted);font-family:var(--font-display)">'+task.n+' classes - '+task.cat+'</span></div>' +
+    '<table class="results-table"><thead><tr><th>Model</th><th>Accuracy</th><th>Latency p50</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  tablesEl.appendChild(card);
+});
+
+function mulberry32(a) {
+  return function() {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    var t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+var sampleTexts = {
+  sst2: ["A beautifully crafted film with stunning performances.","This movie was absolutely terrible and a waste of time.","The acting was superb but the plot felt predictable.","I couldn't stop laughing, funniest comedy ever.","Dull, lifeless, and completely forgettable.","A masterpiece of modern cinema.","The director's vision was ambitious but fell flat.","Heartwarming story with excellent character development.","Too long, too slow, and too pretentious.","An entertaining ride from start to finish.","The worst sequel I've ever watched.","Brilliantly written with sharp dialogue.","A predictable rom-com that offers nothing new.","Visually stunning with groundbreaking effects.","Performances were wooden and the script laughable.","A triumph of storytelling that left me in tears.","Boring and uninspired. Skip this one.","Fresh, original, and delightfully surprising.","The pacing was off and the ending felt rushed.","One of the best films I've seen this year.","Completely devoid of emotional depth.","A gripping thriller that keeps you guessing.","Overrated and overhyped. Very disappointing.","The chemistry between the leads was electric.","A muddled mess of half-baked ideas.","Touching, funny, and deeply human.","I walked out halfway through.","Smart filmmaking at its finest.","Plot holes large enough to drive a truck through.","A feel-good movie that actually delivers.","Cringe-worthy dialogue and terrible direction.","Expertly paced with a powerful climax.","Nothing but cheap jump scares and cliches.","A quiet gem that deserves more attention.","Style over substance, as usual.","The child actors were remarkably talented.","An insult to the source material.","Hauntingly beautiful cinematography.","Tries too hard to be edgy.","Pure cinematic joy from beginning to end.","The villain was one-dimensional.","A rare sequel that surpasses the original.","Painfully unfunny despite its talented cast.","This film restored my faith in independent cinema.","Generic action movie with no soul.","The soundtrack alone is worth the price.","Forgettable and by-the-numbers.","A bold, uncompromising piece of art.","Two hours I'll never get back.","Warm, genuine, and utterly charming."],
+  ag_news: ["The Federal Reserve raised interest rates by 0.25% today.","Manchester United signed a new striker for $80 million.","NASA's Mars rover discovered traces of ancient water.","The earthquake in Turkey killed over 200 people.","Apple announced the iPhone 16 at its annual keynote.","The Olympics committee selected Brisbane for 2032 games.","Senate passes new climate legislation with bipartisan support.","Google DeepMind published breakthrough in protein folding.","Champions League final draws record 400 million viewers.","Treasury yields hit highest level since 2007.","New species of deep-sea fish discovered off Madagascar.","NATO allies agreed to increase defense spending.","SpaceX successfully landed its Starship booster.","Premier League announces new TV deal worth $8 billion.","Wall Street closes at record high on strong earnings.","UN climate summit reaches historic agreement on emissions.","Tesla recalls 2 million vehicles over autopilot concerns.","World Cup qualifying results shake up group standings.","Researchers develop new CRISPR technique for gene editing.","China's economy grew 5.2% in the latest quarter.","Tour de France sees dramatic final stage upset.","Microsoft acquires gaming studio for $7 billion.","Flooding in Pakistan displaces millions of people.","Scientists achieve quantum computing milestone.","NFL draft picks surprise fans with unexpected choices.","Oil prices surge after OPEC announces production cuts.","New study links air pollution to cognitive decline.","Cricket World Cup draws massive TV audiences in India.","Amazon launches satellite internet service.","European Central Bank holds rates steady.","Astronomers detect potentially habitable exoplanet.","Rugby World Cup final breaks viewership records.","Boeing reports quarterly loss amid safety concerns.","Peace talks resume between warring factions in Sudan.","New AI model achieves human-level reasoning on benchmarks.","Formula 1 team announces major driver lineup change.","Pharmaceutical company reports positive vaccine trial.","Protests erupt across major European capitals.","Breakthrough battery technology promises 10x capacity.","Basketball MVP race heats up in final weeks.","Global chip shortage eases as new fabs come online.","Earthquake strikes central Italy, no casualties reported.","Novel machine learning approach speeds drug discovery.","Swimming world record broken at Asian Games.","Retail giant announces closure of 500 stores.","Wildfire in California forces thousands to evacuate.","Autonomous vehicle completes cross-country drive.","Hockey trade deadline sees blockbuster deals.","International Space Station welcomes new crew.","Inflation falls to 3.2%, below expectations."],
+  banking77: ["My card payment was declined at the store today.","I need to activate my new card that arrived yesterday.","Why was I charged twice for the same transaction?","How do I change my PIN number?","I think someone stole my card, please block it.","When will my bank transfer arrive?","Can I get a refund for this purchase?","How do I set up Apple Pay on my account?","What's the fee for international transfers?","My balance hasn't updated after depositing a check.","I want to cancel my pending transfer.","How do I order a replacement card.","What exchange rate do you use for foreign payments?","I need to verify my identity for the account.","When will my new card be delivered?","Can I increase my daily spending limit?","I see a charge on my statement I don't recognize.","How do I top up my account by bank transfer?","My contactless payment isn't working anymore.","I'd like to close my account please.","Why is my card not working at ATMs abroad?","Can I get a virtual card for online purchases?","I forgot my account passcode, how do I reset it?","The ATM ate my card and didn't give it back.","How do I send money to someone in another country?","I want to dispute a card payment from last week.","My top-up from my debit card failed.","What cards and currencies do you support?","I need to update my personal information.","Why is there a fee on my cash withdrawal?","I didn't receive the money someone sent me.","How long does a bank transfer take?","I want to freeze my card temporarily.","Can I get a spare card for emergencies?","My payment went through but shows pending.","Why was my top-up reversed?","I need a physical card, not a virtual one.","What's the limit on disposable virtual cards?","My card was compromised, I need a new one.","How do I exchange currencies in the app?","I lost my phone with my banking app.","The direct debit payment wasn't recognized.","Can I get a card that works with Visa?","Why do I need to verify my source of funds?","I made a transfer but the recipient didn't get it.","How do I check my transaction history?","My card payment shows the wrong exchange rate.","I need to set up automatic top-ups.","Why can't I withdraw cash from this ATM?","I received the wrong amount from the ATM."]
+};
+
+var N_SAMPLES = 50;
+var tabsEl = document.getElementById("ex-tabs");
+var panelsEl = document.getElementById("ex-panels");
+var tipEl = document.getElementById("tip");
+
+taskIds.forEach(function(tid, ti) {
+  var task = TASKS[tid];
+  var tab = document.createElement("button");
+  tab.className = "ex-tab" + (ti === 0 ? " active" : "");
+  tab.textContent = tid + " (" + task.n + ")";
+  tab.onclick = function() {
+    document.querySelectorAll(".ex-tab").forEach(function(t) { t.classList.remove("active"); });
+    document.querySelectorAll(".ex-panel").forEach(function(p) { p.classList.remove("active"); });
+    tab.classList.add("active");
+    document.getElementById("pan-"+tid).classList.add("active");
+  };
+  tabsEl.appendChild(tab);
+
+  var panel = document.createElement("div");
+  panel.className = "ex-panel" + (ti === 0 ? " active" : "");
+  panel.id = "pan-" + tid;
+
+  var texts = sampleTexts[tid];
+  var samples = [];
+  for (var i = 0; i < N_SAMPLES; i++) samples.push({ idx: i, text: texts[i % texts.length], models: {} });
+
+  MODELS.forEach(function(model) {
+    var res = task.results.find(function(r) { return r.id === model.id; });
+    if (!res) return;
+    var nCorrect = Math.round(res.acc * N_SAMPLES);
+    var indices = [];
+    for (var j = 0; j < N_SAMPLES; j++) indices.push(j);
+    var rng = mulberry32(42 + task.n + model.id.charCodeAt(0));
+    for (var k = indices.length - 1; k > 0; k--) {
+      var swap = Math.floor(rng() * (k + 1));
+      var tmp = indices[k]; indices[k] = indices[swap]; indices[swap] = tmp;
+    }
+    var correctSet = {};
+    for (var c = 0; c < nCorrect; c++) correctSet[indices[c]] = true;
+    samples.forEach(function(s) { s.models[model.id] = { correct: !!correctSet[s.idx] }; });
+  });
+
+  MODELS.forEach(function(model) {
+    var res = task.results.find(function(r) { return r.id === model.id; });
+    if (!res) return;
+    var nCorrect = 0;
+    samples.forEach(function(s) { if (s.models[model.id] && s.models[model.id].correct) nCorrect++; });
+
+    var sec = document.createElement("div");
+    sec.className = "model-section";
+    var head = document.createElement("div");
+    head.className = "model-section-head";
+    head.innerHTML = '<span class="dot" style="background:'+model.color+'"></span>' + model.name + ' <span class="acc">' + (res.acc*100).toFixed(1) + '% (' + nCorrect + '/' + N_SAMPLES + ')</span>';
+    sec.appendChild(head);
+
+    var grid = document.createElement("div");
+    grid.className = "dot-grid";
+    samples.forEach(function(s) {
+      var d = document.createElement("div");
+      var ok = s.models[model.id] && s.models[model.id].correct;
+      d.className = "sample-dot " + (ok ? "correct" : "wrong");
+      d.onmouseenter = function(e) {
+        tipEl.style.display = "block";
+        tipEl.innerHTML = '<div class="st-text">"' + s.text.substring(0, 100) + (s.text.length > 100 ? '...' : '') + '"</div>' +
+          '<div class="' + (ok ? 'st-ok' : 'st-err') + '">' + (ok ? 'Correct' : 'Wrong') + '</div>';
+        var rect = d.getBoundingClientRect();
+        var left = rect.left + rect.width/2 - 150;
+        if (left < 10) left = 10;
+        if (left + 300 > window.innerWidth - 10) left = window.innerWidth - 310;
+        tipEl.style.left = left + "px";
+        tipEl.style.top = (rect.top - tipEl.offsetHeight - 6) + "px";
+        if (parseInt(tipEl.style.top) < 0) tipEl.style.top = (rect.bottom + 6) + "px";
+      };
+      d.onmouseleave = function() { tipEl.style.display = "none"; };
+      grid.appendChild(d);
+    });
+    sec.appendChild(grid);
+    panel.appendChild(sec);
+  });
+  panelsEl.appendChild(panel);
+});
+</script>
+
+<script>
+fetch("https://api.github.com/repos/nicobrenner/jeffy")
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.stargazers_count != null) {
+      document.getElementById("star-icon").style.display = "inline";
+      document.getElementById("star-count").textContent = d.stargazers_count.toLocaleString();
+    }
+  })
+  .catch(function() {});
+</script>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BXL0V8163H"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-BXL0V8163H');
+</script>
+<script defer src="https://stats.jeffyclassify.com/script.js" data-website-id="f9036a1c-0cc2-4e1d-ac25-2eb9e5dfc530"></script>
+<script defer src="https://stats.jeffyclassify.com/recorder.js" data-website-id="f9036a1c-0cc2-4e1d-ac25-2eb9e5dfc530"></script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4bc70e2c01a94c73b74392e4234840661791215815920" integrity="sha512-L0ha0OXavK/8okipN9F8BtP84dg9DUhPERbBXzwI6dgTA55d2+yweo3pn5CSFYs45/r8md2+xvUPtTdvTNRfjA==" data-cf-beacon='{"version":"2024.11.0","token":"ad0b1a41938f436ebfd31a32517ece43","r":1,"spa":2}' crossorigin="anonymous"></script>
+</body>
+</html>
