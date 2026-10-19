@@ -560,7 +560,7 @@ footer a:hover { color: var(--accent); }
 </p>
 
 <p>
-  Jeffy takes a different approach. Logistic regression on frozen embeddings. No LLM, no prompt, no parsing. Same input always gives the same output. The community node brings 70 pretrained classifiers into n8n as a dropdown
+  Jeffy takes a different approach. Logistic regression on frozen embeddings. No LLM, no prompt, no parsing. Same input always gives the same output. The Jeffy node brings 70 pretrained classifiers into n8n as a dropdown
 </p>
 
 <div class="stat-row">
@@ -579,6 +579,59 @@ footer a:hover { color: var(--accent); }
   <div class="stat-item">
     <span class="big-number" style="color:var(--fg)">$0</span>
     <span class="big-label">Per API call</span>
+  </div>
+</div>
+
+<h2>Example workflow: customer support router</h2>
+
+<p>
+  Customer message comes in. Jeffy classifies it against 77 banking intents, then IF nodes route it. Account closure goes to the retention team, lost/stolen cards go to urgent support, everything else hits the general queue. Each path carries the original label and confidence score
+</p>
+
+<div class="wf-box">
+  <div class="wf-controls">
+    <button class="wf-btn wf-primary" id="wf-run">Run workflow</button>
+    <button class="wf-btn" id="wf-auto">Auto-play</button>
+    <span class="wf-stats">Classified: <span class="wf-sv" id="wf-ct">0</span> &middot; Avg: <span class="wf-sv" id="wf-ms">&mdash;</span></span>
+  </div>
+  <div class="wf-canvas">
+    <div class="wf-flow" id="wf-flow">
+      <svg class="wf-svg" id="wf-svg"></svg>
+      <div class="wf-node" id="wn-wh" style="left:0;top:100px">
+        <div class="wf-nh"><div class="wf-dot" style="background:#4493f8"></div>Webhook</div>
+        <div class="wf-nb"><span>POST</span> <span class="wf-v">/support</span><br><span id="wn-whs">Listening...</span></div>
+      </div>
+      <div class="wf-node" id="wn-jf" style="left:170px;top:100px">
+        <div class="wf-nh"><div class="wf-dot" style="background:#3fb950"></div>Jeffy</div>
+        <div class="wf-nb"><span>task:</span> <span class="wf-v">banking77</span><br><span id="wn-jfs">Ready</span></div>
+      </div>
+      <div class="wf-node" id="wn-sw" style="left:340px;top:100px">
+        <div class="wf-nh"><div class="wf-dot" style="background:#d29922"></div>Switch</div>
+        <div class="wf-nb"><span>3 routes</span><br><span id="wn-sws">Idle</span></div>
+      </div>
+      <div class="wf-node" id="wn-ret" style="left:530px;top:4px">
+        <div class="wf-nh"><div class="wf-dot" style="background:#f85149"></div>#retention</div>
+        <div class="wf-nb"><span id="wn-retm">&mdash;</span></div>
+      </div>
+      <div class="wf-node" id="wn-urg" style="left:530px;top:100px">
+        <div class="wf-nh"><div class="wf-dot" style="background:#d29922"></div>#urgent</div>
+        <div class="wf-nb"><span id="wn-urgm">&mdash;</span></div>
+      </div>
+      <div class="wf-node" id="wn-gen" style="left:530px;top:196px">
+        <div class="wf-nh"><div class="wf-dot" style="background:#3fb950"></div>#general</div>
+        <div class="wf-nb"><span id="wn-genm">&mdash;</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="wf-data">
+    <div class="wf-panel">
+      <div class="wf-ph"><div class="wf-dot" style="background:#3fb950"></div> Classification</div>
+      <div class="wf-pp"><pre id="wf-json">Waiting for input...</pre></div>
+    </div>
+    <div class="wf-panel">
+      <div class="wf-ph"><div class="wf-dot" style="background:#e0488b"></div> Routing log</div>
+      <div class="wf-pp" id="wf-feed"></div>
+    </div>
   </div>
 </div>
 
@@ -648,59 +701,6 @@ footer a:hover { color: var(--accent); }
     </tr>
   </tbody>
 </table>
-</div>
-
-<h2>The workflow: customer support router</h2>
-
-<p>
-  Customer message comes in. Jeffy classifies it against 77 banking intents, then IF nodes route it. Account closure goes to the retention team, lost/stolen cards go to urgent support, everything else hits the general queue. Each path carries the original label and confidence score
-</p>
-
-<div class="wf-box">
-  <div class="wf-controls">
-    <button class="wf-btn wf-primary" id="wf-run">Run workflow</button>
-    <button class="wf-btn" id="wf-auto">Auto-play</button>
-    <span class="wf-stats">Classified: <span class="wf-sv" id="wf-ct">0</span> &middot; Avg: <span class="wf-sv" id="wf-ms">—</span></span>
-  </div>
-  <div class="wf-canvas">
-    <div class="wf-flow" id="wf-flow">
-      <svg class="wf-svg" id="wf-svg"></svg>
-      <div class="wf-node" id="wn-wh" style="left:0;top:100px">
-        <div class="wf-nh"><div class="wf-dot" style="background:#4493f8"></div>Webhook</div>
-        <div class="wf-nb"><span>POST</span> <span class="wf-v">/support</span><br><span id="wn-whs">Listening...</span></div>
-      </div>
-      <div class="wf-node" id="wn-jf" style="left:170px;top:100px">
-        <div class="wf-nh"><div class="wf-dot" style="background:#3fb950"></div>Jeffy</div>
-        <div class="wf-nb"><span>task:</span> <span class="wf-v">banking77</span><br><span id="wn-jfs">Ready</span></div>
-      </div>
-      <div class="wf-node" id="wn-sw" style="left:340px;top:100px">
-        <div class="wf-nh"><div class="wf-dot" style="background:#d29922"></div>Switch</div>
-        <div class="wf-nb"><span>3 routes</span><br><span id="wn-sws">Idle</span></div>
-      </div>
-      <div class="wf-node" id="wn-ret" style="left:530px;top:4px">
-        <div class="wf-nh"><div class="wf-dot" style="background:#f85149"></div>#retention</div>
-        <div class="wf-nb"><span id="wn-retm">—</span></div>
-      </div>
-      <div class="wf-node" id="wn-urg" style="left:530px;top:100px">
-        <div class="wf-nh"><div class="wf-dot" style="background:#d29922"></div>#urgent</div>
-        <div class="wf-nb"><span id="wn-urgm">—</span></div>
-      </div>
-      <div class="wf-node" id="wn-gen" style="left:530px;top:196px">
-        <div class="wf-nh"><div class="wf-dot" style="background:#3fb950"></div>#general</div>
-        <div class="wf-nb"><span id="wn-genm">—</span></div>
-      </div>
-    </div>
-  </div>
-  <div class="wf-data">
-    <div class="wf-panel">
-      <div class="wf-ph"><div class="wf-dot" style="background:#3fb950"></div> Classification</div>
-      <div class="wf-pp"><pre id="wf-json">Waiting for input...</pre></div>
-    </div>
-    <div class="wf-panel">
-      <div class="wf-ph"><div class="wf-dot" style="background:#e0488b"></div> Routing log</div>
-      <div class="wf-pp" id="wf-feed"></div>
-    </div>
-  </div>
 </div>
 
 <h2>Install in 3 steps</h2>
