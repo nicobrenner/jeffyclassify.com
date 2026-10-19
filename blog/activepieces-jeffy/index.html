@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Jeffy + Activepieces: Free Text Classification for Your Automations</title>
+<meta name="description" content="Add deterministic text classification to Activepieces. Free, self-hosted, 15ms per classification. No LLM, no API key. Install the piece and start routing.">
+<link rel="icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:title" content="Jeffy + Activepieces: Free Text Classification for Automations">
+<meta property="og:description" content="Classify text in Activepieces without an LLM. 15ms, deterministic, 70 pretrained tasks. Free community piece.">
+<meta property="og:url" content="https://jeffyclassify.com/blog/activepieces-jeffy/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Jeffy">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Jeffy + Activepieces: Free Text Classification for Automations">
+<meta name="twitter:description" content="Classify text in Activepieces without an LLM. 15ms, deterministic, 70 pretrained tasks. Free community piece.">
+<meta property="og:image" content="https://jeffyclassify.com/blog/activepieces-jeffy/og.png">
+<meta name="twitter:image" content="https://jeffyclassify.com/blog/activepieces-jeffy/og.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+:root {
+  --bg: #0a0a0c;
+  --fg: #e0dfd8;
+  --fg-muted: #8a8880;
+  --surface: #141418;
+  --surface-raised: #1c1c22;
+  --border: #2a2a30;
+  --accent: #ff6d3a;
+  --accent-dim: #c44e20;
+  --accent-glow: rgba(255,109,58,0.12);
+  --ap-purple: #6e41e2;
+  --ap-purple-dim: #5530b0;
+  --good: #4ade80;
+  --warn: #facc15;
+  --bad: #f87171;
+  --font-display: 'IBM Plex Mono', monospace;
+  --font-body: 'Source Sans 3', -apple-system, sans-serif;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  line-height: 1.65;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+h1 {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--accent);
+  margin: 2.5rem 0 0.3rem;
+  text-wrap: balance;
+}
+
+.dateline {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  color: var(--fg-muted);
+  margin-bottom: 1.5rem;
+}
+
+h2 {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--fg);
+  margin: 2.2rem 0 0.8rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+p { margin: 0.8rem 0; }
+
+a { color: var(--accent); text-underline-offset: 3px; }
+a:hover { color: #ff9060; }
+
+code {
+  font-family: var(--font-display);
+  font-size: 0.88em;
+  background: var(--surface);
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 18px;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  margin: 1rem 0;
+}
+
+pre code { background: none; padding: 0; font-size: inherit; }
+
+.callout {
+  background: var(--surface-raised);
+  border-left: 3px solid var(--accent);
+  padding: 14px 18px;
+  border-radius: 0 8px 8px 0;
+  margin: 1.2rem 0;
+  font-size: 0.95rem;
+}
+
+.callout strong { color: var(--fg); }
+
+/* --- STAT ROW --- */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 1.5rem 0;
+}
+
+.stat-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.big-number {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.big-label {
+  font-size: 0.72rem;
+  color: var(--fg-muted);
+  line-height: 1.3;
+}
+
+/* --- COMPARE TABLE --- */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  margin: 1rem 0;
+}
+
+.compare-table th {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-muted);
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.compare-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.compare-table tr:last-child td { border-bottom: none; }
+
+.compare-table .dim { color: var(--fg-muted); }
+.compare-table .good { color: var(--good); }
+
+/* --- LIVE DEMO --- */
+.demo-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  margin: 1.2rem 0;
+}
+
+.demo-label {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-muted);
+  margin-bottom: 12px;
+}
+
+.demo-input-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.demo-input-row input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  padding: 10px 14px;
+  border-radius: 6px;
+  outline: none;
+}
+
+.demo-input-row input:focus { border-color: var(--accent); }
+
+.demo-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.demo-btn:hover { background: #ff8050; }
+.demo-btn:disabled { opacity: 0.5; cursor: wait; }
+
+.demo-samples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.demo-sample {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  color: var(--fg-muted);
+  font-size: 0.75rem;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.demo-sample:hover {
+  border-color: var(--accent);
+  color: var(--fg);
+}
+
+.demo-result {
+  display: none;
+  margin-top: 16px;
+}
+
+.demo-result.show { display: block; }
+
+.route-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.route-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.route-step .step-icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+}
+
+.route-step .step-body { min-width: 0; }
+.route-step .step-label {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  color: var(--fg-muted);
+}
+.route-step .step-value {
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.step-classify {
+  background: rgba(255,109,58,0.08);
+  border: 1px solid rgba(255,109,58,0.2);
+}
+.step-classify .step-icon { background: var(--accent); color: #fff; }
+.step-classify .step-value { color: var(--accent); }
+
+.step-route {
+  background: rgba(110,65,226,0.08);
+  border: 1px solid rgba(110,65,226,0.2);
+}
+.step-route .step-icon { background: var(--ap-purple); color: #fff; }
+.step-route .step-value { color: var(--ap-purple); }
+
+/* --- INSTALL STEPS --- */
+.step-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 1rem 0;
+}
+
+.step-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.step-num {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.step-card .step-text { font-size: 0.92rem; }
+.step-card code { font-size: 0.82em; }
+
+/* --- WORKFLOW ANIMATION --- */
+.wf-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin: 1.2rem 0;
+  overflow: hidden;
+}
+.wf-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.wf-btn {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  color: var(--fg);
+  cursor: pointer;
+}
+.wf-btn:hover { border-color: var(--accent); }
+.wf-btn.wf-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.wf-btn.wf-primary:hover { opacity: 0.9; }
+.wf-stats {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  color: var(--fg-muted);
+}
+.wf-stats .wf-sv { color: var(--fg); font-weight: 600; }
+.wf-canvas {
+  overflow-x: auto;
+  padding: 12px 14px;
+}
+.wf-flow {
+  position: relative;
+  min-width: 720px;
+  height: 280px;
+}
+.wf-node {
+  position: absolute;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  width: 128px;
+  overflow: hidden;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.wf-node.wf-active {
+  border-color: #58a6ff;
+  box-shadow: 0 0 12px rgba(88,166,255,0.15);
+}
+.wf-nh {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+.wf-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.wf-nb {
+  padding: 6px 8px;
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  color: var(--fg-muted);
+  line-height: 1.4;
+}
+.wf-nb .wf-v { color: var(--fg); font-weight: 500; }
+.wf-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+.wf-conn { fill: none; stroke: var(--border); stroke-width: 1.5; }
+.wf-conn.wf-ca { stroke: #58a6ff; filter: drop-shadow(0 0 3px rgba(88,166,255,0.25)); }
+.wf-conn.wf-r-ret.wf-ca { stroke: #f85149; filter: drop-shadow(0 0 3px rgba(248,81,73,0.25)); }
+.wf-conn.wf-r-urg.wf-ca { stroke: #d29922; filter: drop-shadow(0 0 3px rgba(210,153,34,0.25)); }
+.wf-conn.wf-r-gen.wf-ca { stroke: #3fb950; filter: drop-shadow(0 0 3px rgba(63,185,80,0.25)); }
+.wf-pulse { r: 3; opacity: 0; }
+.wf-pulse.wf-p-ret { fill: #f85149; }
+.wf-pulse.wf-p-urg { fill: #d29922; }
+.wf-pulse.wf-p-gen { fill: #3fb950; }
+.wf-pulse.wf-p-def { fill: #58a6ff; }
+.wf-data {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border-top: 1px solid var(--border);
+}
+@media (max-width: 520px) { .wf-data { grid-template-columns: 1fr; } }
+.wf-panel { padding: 10px 14px; }
+.wf-panel + .wf-panel { border-left: 1px solid var(--border); }
+@media (max-width: 520px) { .wf-panel + .wf-panel { border-left: none; border-top: 1px solid var(--border); } }
+.wf-ph {
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--fg-muted);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.wf-pp {
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  line-height: 1.55;
+  color: var(--fg-muted);
+  max-height: 120px;
+  overflow-y: auto;
+}
+.wf-pp pre { margin: 0; padding: 10px 18px; white-space: pre-wrap; word-break: break-word; font-size: inherit; font-family: var(--font-display); }
+.wf-jk { color: #58a6ff; }
+.wf-js { color: #3fb950; }
+.wf-jn { color: #d29922; }
+.wf-fi {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  font-size: 0.62rem;
+}
+.wf-fi:last-child { border-bottom: none; }
+.wf-ft { color: var(--fg-muted); flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.wf-fl {
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 0.58rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.wf-fl.wf-fret { background: rgba(248,81,73,0.15); color: #f85149; }
+.wf-fl.wf-furg { background: rgba(210,153,34,0.15); color: #d29922; }
+.wf-fl.wf-fgen { background: rgba(63,185,80,0.15); color: #3fb950; }
+.wf-fx { color: var(--fg); }
+
+/* --- LINK BUTTONS --- */
+.download-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 1.2rem 0;
+}
+
+.dl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  padding: 10px 16px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: border-color 0.15s;
+}
+
+.dl-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.dl-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+/* --- SCREENSHOT --- */
+.screenshot {
+  margin: 1.2rem 0;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.screenshot img {
+  width: 100%;
+  display: block;
+}
+
+.screenshot-caption {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  color: var(--fg-muted);
+  padding: 8px 14px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+
+footer {
+  margin: 2.5rem 0 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  color: var(--fg-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+
+footer a { color: var(--accent-dim); }
+footer a:hover { color: var(--accent); }
+
+@media (max-width: 520px) {
+  .stat-row { grid-template-columns: repeat(2, 1fr); }
+  h1 { font-size: 1.25rem; }
+  .demo-input-row { flex-direction: column; }
+  .demo-btn { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<h1>Jeffy + Activepieces: free text classification for your automations</h1>
+<p class="dateline">Oct 2026 &middot; Community Piece &middot; Nico Brenner</p>
+
+<p>
+  Activepieces doesn't have a built-in text classifier. If you want to route messages by intent, detect sentiment, or categorize support tickets, you're building it yourself with an LLM step. That means writing a prompt, parsing JSON output, handling the cases where the model wraps its answer in markdown fences or returns something unexpected
+</p>
+
+<p>
+  Jeffy is a different approach. Logistic regression on frozen embeddings. No LLM, no prompt, no parsing. Same input always gives the same output. The Jeffy piece brings 70 pretrained classifiers into Activepieces as a dropdown
+</p>
+
+<div class="stat-row">
+  <div class="stat-item">
+    <span class="big-number" style="color:var(--accent)">15ms</span>
+    <span class="big-label">Per classification</span>
+  </div>
+  <div class="stat-item">
+    <span class="big-number" style="color:var(--ap-purple)">70</span>
+    <span class="big-label">Pretrained tasks</span>
+  </div>
+  <div class="stat-item">
+    <span class="big-number" style="color:var(--good)">94.3%</span>
+    <span class="big-label">Banking77 acc</span>
+  </div>
+  <div class="stat-item">
+    <span class="big-number" style="color:var(--fg)">$0</span>
+    <span class="big-label">Per API call</span>
+  </div>
+</div>
+
+<h2>What it does</h2>
+
+<p>
+  You give it text. It tells you what category it belongs to. 70 pretrained classifiers cover common tasks: customer support routing (77 banking intents), sentiment analysis, topic classification, spam detection, emotion detection, and more
+</p>
+
+<p>
+  The piece has four actions:
+</p>
+
+<div style="overflow-x:auto">
+<table class="compare-table">
+  <thead>
+    <tr><th>Action</th><th>What it does</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Classify Text</strong></td>
+      <td>Classify a single text against a pretrained task. Returns label, confidence, probabilities</td>
+    </tr>
+    <tr>
+      <td><strong>Batch Classify</strong></td>
+      <td>Classify multiple texts in one request. Same output per text, faster than individual calls</td>
+    </tr>
+    <tr>
+      <td><strong>List Classifiers</strong></td>
+      <td>List all available classification tasks on the server</td>
+    </tr>
+    <tr>
+      <td><strong>Health Check</strong></td>
+      <td>Check if the Jeffy server is running and how many classifiers are loaded</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h2>Example: customer support routing</h2>
+
+<p>
+  Customer message comes in via webhook. Jeffy classifies it against 77 banking intents. A Router step sends it to the right team: account closures go to retention, lost/stolen cards go to urgent support, everything else hits the general queue
+</p>
+
+<div class="wf-box">
+  <div class="wf-controls">
+    <button class="wf-btn wf-primary" id="wf-run">Run workflow</button>
+    <button class="wf-btn" id="wf-auto">Auto-play</button>
+    <span class="wf-stats">Classified: <span class="wf-sv" id="wf-ct">0</span> &middot; Avg: <span class="wf-sv" id="wf-ms">&mdash;</span></span>
+  </div>
+  <div class="wf-canvas">
+    <div class="wf-flow" id="wf-flow">
+      <svg class="wf-svg" id="wf-svg"></svg>
+      <div class="wf-node" id="wn-wh" style="left:0;top:100px">
+        <div class="wf-nh"><div class="wf-dot" style="background:#4493f8"></div>Webhook</div>
+        <div class="wf-nb"><span>POST</span> <span class="wf-v">/support</span><br><span id="wn-whs">Listening...</span></div>
+      </div>
+      <div class="wf-node" id="wn-jf" style="left:170px;top:100px">
+        <div class="wf-nh"><div class="wf-dot" style="background:#3fb950"></div>Jeffy</div>
+        <div class="wf-nb"><span>task:</span> <span class="wf-v">banking77</span><br><span id="wn-jfs">Ready</span></div>
+      </div>
+      <div class="wf-node" id="wn-sw" style="left:340px;top:100px">
+        <div class="wf-nh"><div class="wf-dot" style="background:#d29922"></div>Router</div>
+        <div class="wf-nb"><span>3 routes</span><br><span id="wn-sws">Idle</span></div>
+      </div>
+      <div class="wf-node" id="wn-ret" style="left:530px;top:4px">
+        <div class="wf-nh"><div class="wf-dot" style="background:#f85149"></div>#retention</div>
+        <div class="wf-nb"><span id="wn-retm">&mdash;</span></div>
+      </div>
+      <div class="wf-node" id="wn-urg" style="left:530px;top:100px">
+        <div class="wf-nh"><div class="wf-dot" style="background:#d29922"></div>#urgent</div>
+        <div class="wf-nb"><span id="wn-urgm">&mdash;</span></div>
+      </div>
+      <div class="wf-node" id="wn-gen" style="left:530px;top:196px">
+        <div class="wf-nh"><div class="wf-dot" style="background:#3fb950"></div>#general</div>
+        <div class="wf-nb"><span id="wn-genm">&mdash;</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="wf-data">
+    <div class="wf-panel">
+      <div class="wf-ph"><div class="wf-dot" style="background:#3fb950"></div> Classification</div>
+      <div class="wf-pp"><pre id="wf-json">Waiting for input...</pre></div>
+    </div>
+    <div class="wf-panel">
+      <div class="wf-ph"><div class="wf-dot" style="background:#e0488b"></div> Routing log</div>
+      <div class="wf-pp" id="wf-feed"></div>
+    </div>
+  </div>
+</div>
+
+<h2>Try it live</h2>
+
+<p>
+  This calls the real Jeffy API. Type a message, it classifies against <code>banking77</code> (77 intent classes), then routes it the same way the workflow does
+</p>
+
+<div class="demo-box">
+  <div class="demo-label">Customer support router</div>
+  <div class="demo-samples" id="samples"></div>
+  <div class="demo-input-row">
+    <input type="text" id="demo-text" placeholder="Type a customer message...">
+    <button class="demo-btn" id="demo-go" onclick="classify()">Classify</button>
+  </div>
+  <div class="demo-result" id="demo-result">
+    <div class="route-flow" id="route-flow"></div>
+  </div>
+</div>
+
+<h2>Why not just use an LLM step?</h2>
+
+<p>
+  You can add a Code step or use the AI piece to classify text with an LLM. It works for prototyping. But in production, LLM-based classification has real downsides
+</p>
+
+<div style="overflow-x:auto">
+<table class="compare-table">
+  <thead>
+    <tr><th></th><th>LLM step</th><th>Jeffy</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Reliability</td>
+      <td class="dim">Output format varies between runs</td>
+      <td class="good">Deterministic, always valid JSON</td>
+    </tr>
+    <tr>
+      <td>Latency</td>
+      <td class="dim">500ms &ndash; 3s per item</td>
+      <td class="good">~15ms local, ~300ms remote</td>
+    </tr>
+    <tr>
+      <td>Cost</td>
+      <td class="dim">LLM API credits per call</td>
+      <td class="good">Free (self-hosted or playground)</td>
+    </tr>
+    <tr>
+      <td>API key</td>
+      <td class="dim">Required (OpenAI, Anthropic, etc.)</td>
+      <td class="good">Optional, public playground works</td>
+    </tr>
+    <tr>
+      <td>Setup</td>
+      <td class="dim">Write a prompt, parse the response</td>
+      <td class="good">Pick a task from the dropdown</td>
+    </tr>
+    <tr>
+      <td>Privacy</td>
+      <td class="dim">Data sent to LLM provider</td>
+      <td class="good">Self-hostable, data stays local</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<h2>Install in 3 steps</h2>
+
+<div class="step-cards">
+  <div class="step-card">
+    <span class="step-num">1</span>
+    <div class="step-text">
+      Install the piece on your Activepieces instance<br>
+      <span style="color:var(--fg-muted);font-size:0.85rem">Settings &rarr; Pieces &rarr; Install from npm: <code>activepieces-piece-jeffy</code></span>
+    </div>
+  </div>
+  <div class="step-card">
+    <span class="step-num">2</span>
+    <div class="step-text">
+      Add a Jeffy connection<br>
+      <span style="color:var(--fg-muted);font-size:0.85rem">Default: <code>playground.jeffyclassify.com</code> (free, no key needed)</span>
+    </div>
+  </div>
+  <div class="step-card">
+    <span class="step-num">3</span>
+    <div class="step-text">
+      Add a Classify Text step, pick a task, connect<br>
+      <span style="color:var(--fg-muted);font-size:0.85rem">70 classifiers available from the dropdown</span>
+    </div>
+  </div>
+</div>
+
+<div class="callout">
+  <strong>Self-hosted Activepieces?</strong> You can install the piece via the npm package <code>activepieces-piece-jeffy</code> or upload the tarball directly through the Activepieces API
+</div>
+
+<h2>Self-host or use the playground</h2>
+
+<p>
+  The piece defaults to <code>playground.jeffyclassify.com</code>, a free public instance with all 70 classifiers loaded. No API key, no signup
+</p>
+
+<p>
+  For production, self-host Jeffy on any machine with a CPU:
+</p>
+
+<pre><code><span style="color:var(--accent)">$</span> pip install jeffy-classify
+<span style="color:var(--accent)">$</span> jeffy serve --port 8400</code></pre>
+
+<p>
+  Then point the connection to <code>http://localhost:8400</code>. Your data never leaves your network
+</p>
+
+<h2>What's next</h2>
+
+<p>
+  If you need a classifier that doesn't exist yet, you can train your own with a few labeled examples. Jeffy trains in seconds on CPU, and you can export the model and load it on any Jeffy server
+</p>
+
+<p>
+  <a href="https://playground.jeffyclassify.com">Try 70 classifiers live</a> &middot; <a href="https://github.com/nicobrenner/activepieces-piece-jeffy">Source on GitHub</a> &middot; <a href="https://www.npmjs.com/package/activepieces-piece-jeffy">npm</a> &middot; <a href="https://github.com/nicobrenner/jeffy">Jeffy</a>
+</p>
+
+<div class="download-row">
+  <a class="dl-btn" href="https://github.com/nicobrenner/activepieces-piece-jeffy" target="_blank">
+    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+    GitHub
+  </a>
+  <a class="dl-btn" href="https://www.npmjs.com/package/activepieces-piece-jeffy" target="_blank">
+    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M0 0v16h16V0H0zm13 13H8V5h2.5v5.5H13V5h-2.5V3H3v10h10V3h-2.5v5.5H13V13z"/></svg>
+    npm
+  </a>
+  <a class="dl-btn" href="https://playground.jeffyclassify.com" target="_blank">
+    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0a8 8 0 100 16A8 8 0 008 0zm0 14.5a6.5 6.5 0 110-13 6.5 6.5 0 010 13zM7 4.5l5 3.5-5 3.5v-7z"/></svg>
+    Playground
+  </a>
+</div>
+
+<footer>
+  <a href="https://jeffyclassify.com">Jeffy</a>
+  <a href="https://playground.jeffyclassify.com">Playground</a>
+  <a href="https://github.com/nicobrenner/activepieces-piece-jeffy">Activepieces Piece</a>
+  <a href="https://github.com/nicobrenner/jeffy">GitHub</a>
+</footer>
+
+<script>
+(function() {
+var WF_MSGS = [
+  { text: "I want to close my account and get my money back", route: "ret", label: "terminate_account", conf: 0.87, ms: 14 },
+  { text: "I think my card has been stolen", route: "urg", label: "lost_or_stolen_card", conf: 0.92, ms: 11 },
+  { text: "How do I set up Apple Pay?", route: "gen", label: "apple_pay_or_google_pay", conf: 0.99, ms: 12 },
+  { text: "Please cancel my account, I'm switching banks", route: "ret", label: "terminate_account", conf: 0.74, ms: 15 },
+  { text: "Someone used my card without permission", route: "urg", label: "compromised_card", conf: 0.93, ms: 10 },
+  { text: "Why was I charged twice for the same transaction?", route: "gen", label: "transaction_charged_twice", conf: 0.99, ms: 12 },
+  { text: "My phone was stolen, freeze everything", route: "urg", label: "lost_or_stolen_phone", conf: 0.91, ms: 11 },
+  { text: "How do I change my PIN?", route: "gen", label: "change_pin", conf: 0.98, ms: 13 },
+  { text: "I'm done with this bank, close my account", route: "ret", label: "terminate_account", conf: 0.89, ms: 13 },
+  { text: "The contactless payment stopped working", route: "gen", label: "contactless_not_working", conf: 0.86, ms: 14 },
+];
+var wIdx = 0, wCount = 0, wMs = 0, wAuto = null, wRunning = false;
+var $ = function(id) { return document.getElementById(id); };
+
+function wfDraw() {
+  var svg = $('wf-svg'), fl = $('wf-flow');
+  var W = fl.offsetWidth, H = fl.offsetHeight;
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  function nc(id, side) {
+    var el = $(id);
+    return [side === 'r' ? el.offsetLeft + el.offsetWidth : el.offsetLeft, el.offsetTop + el.offsetHeight / 2];
+  }
+  var paths = [
+    { id: 'wc0', f: nc('wn-wh','r'), t: nc('wn-jf','l'), c: '' },
+    { id: 'wc1', f: nc('wn-jf','r'), t: nc('wn-sw','l'), c: '' },
+    { id: 'wc2', f: nc('wn-sw','r'), t: nc('wn-ret','l'), c: 'wf-r-ret' },
+    { id: 'wc3', f: nc('wn-sw','r'), t: nc('wn-urg','l'), c: 'wf-r-urg' },
+    { id: 'wc4', f: nc('wn-sw','r'), t: nc('wn-gen','l'), c: 'wf-r-gen' },
+  ];
+  var h = '';
+  for (var i = 0; i < paths.length; i++) {
+    var p = paths[i], x1 = p.f[0], y1 = p.f[1], x2 = p.t[0], y2 = p.t[1];
+    var cx = (x1 + x2) / 2;
+    var d = 'M' + x1 + ',' + y1 + ' C' + cx + ',' + y1 + ' ' + cx + ',' + y2 + ' ' + x2 + ',' + y2;
+    var pc = p.c ? ('wf-p-' + p.c.replace('wf-r-','')) : 'wf-p-def';
+    h += '<path id="' + p.id + '" class="wf-conn ' + p.c + '" d="' + d + '"/>';
+    h += '<circle class="wf-pulse ' + pc + '" id="wp-' + p.id + '"><animateMotion dur="0.35s" fill="freeze" begin="indefinite"><mpath href="#' + p.id + '"/></animateMotion></circle>';
+  }
+  svg.innerHTML = h;
+}
+
+function wfJson(obj) {
+  return JSON.stringify(obj, null, 2)
+    .replace(/"([^"]+)":/g, '<span class="wf-jk">"$1"</span>:')
+    .replace(/: "([^"]+)"/g, ': <span class="wf-js">"$1"</span>')
+    .replace(/: (\d+\.?\d*)/g, ': <span class="wf-jn">$1</span>');
+}
+
+function wfFeed(msg) {
+  var fd = $('wf-feed');
+  var t = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  var cls = { ret: 'wf-fret', urg: 'wf-furg', gen: 'wf-fgen' }[msg.route];
+  var lbl = { ret: 'retention', urg: 'urgent', gen: 'general' }[msg.route];
+  var div = document.createElement('div');
+  div.className = 'wf-fi';
+  div.innerHTML = '<span class="wf-ft">' + t + '</span><span class="wf-fl ' + cls + '">' + lbl + '</span><span class="wf-fx">' + msg.label + '</span>';
+  fd.prepend(div);
+  while (fd.children.length > 6) fd.lastChild.remove();
+}
+
+function wfStep(nid, cid, dur) {
+  return new Promise(function(resolve) {
+    $(nid).classList.add('wf-active');
+    if (cid) {
+      $(cid).classList.add('wf-ca');
+      var pulse = $('wp-' + cid);
+      pulse.style.opacity = 1;
+      pulse.querySelector('animateMotion').beginElement();
+      setTimeout(function() { pulse.style.opacity = 0; }, dur - 40);
+    }
+    setTimeout(resolve, dur);
+  });
+}
+
+function wfClear() {
+  var nodes = document.querySelectorAll('.wf-node.wf-active');
+  for (var i = 0; i < nodes.length; i++) nodes[i].classList.remove('wf-active');
+  var conns = document.querySelectorAll('.wf-conn.wf-ca');
+  for (var j = 0; j < conns.length; j++) conns[j].classList.remove('wf-ca');
+}
+
+async function wfRun() {
+  if (wRunning) return;
+  wRunning = true;
+  var msg = WF_MSGS[wIdx % WF_MSGS.length];
+  wIdx++;
+  wfClear();
+
+  $('wn-whs').innerHTML = '<span class="wf-v">Received</span>';
+  await wfStep('wn-wh', null, 180);
+  await wfStep('wn-wh', 'wc0', 350);
+
+  $('wn-jfs').textContent = 'Classifying...';
+  await wfStep('wn-jf', null, 250);
+  $('wn-jfs').innerHTML = '<span class="wf-v">' + msg.label + '</span>';
+  $('wf-json').innerHTML = wfJson({ label: msg.label, confidence: msg.conf, latency_ms: msg.ms, task: 'banking77' });
+  await wfStep('wn-jf', 'wc1', 350);
+
+  var rn = { ret: 'retention', urg: 'urgent', gen: 'general' }[msg.route];
+  $('wn-sws').innerHTML = '→ <span class="wf-v">' + rn + '</span>';
+  var rc = { ret: 'wc2', urg: 'wc3', gen: 'wc4' }[msg.route];
+  await wfStep('wn-sw', rc, 350);
+
+  var sn = { ret: 'wn-ret', urg: 'wn-urg', gen: 'wn-gen' }[msg.route];
+  var sm = { ret: 'wn-retm', urg: 'wn-urgm', gen: 'wn-genm' }[msg.route];
+  $(sm).innerHTML = '<span class="wf-v">' + msg.text.slice(0, 30) + '...</span>';
+  await wfStep(sn, null, 250);
+
+  wfFeed(msg);
+  wCount++; wMs += msg.ms;
+  $('wf-ct').textContent = wCount;
+  $('wf-ms').textContent = (wMs / wCount).toFixed(1) + 'ms';
+
+  setTimeout(function() {
+    wfClear();
+    $('wn-whs').textContent = 'Listening...';
+    wRunning = false;
+  }, 350);
+}
+
+$('wf-run').addEventListener('click', wfRun);
+$('wf-auto').addEventListener('click', function() {
+  if (wAuto) { clearInterval(wAuto); wAuto = null; $('wf-auto').textContent = 'Auto-play'; }
+  else { wfRun(); wAuto = setInterval(wfRun, 2000); $('wf-auto').textContent = 'Stop'; }
+});
+wfDraw();
+window.addEventListener('resize', wfDraw);
+setTimeout(wfRun, 500);
+})();
+</script>
+
+<script>
+var SAMPLES = [
+  "I want to close my account and get my money back",
+  "My card was stolen, please freeze it",
+  "How do I set up Apple Pay?",
+  "Why was I charged twice?",
+  "Cancel my subscription immediately",
+  "I lost my phone, lock everything",
+  "How do I change my PIN?",
+  "The ATM ate my card"
+];
+
+(function() {
+  var el = document.getElementById("samples");
+  for (var i = 0; i < SAMPLES.length; i++) {
+    var btn = document.createElement("button");
+    btn.className = "demo-sample";
+    btn.textContent = SAMPLES[i];
+    btn.onclick = (function(t) { return function() {
+      document.getElementById("demo-text").value = t;
+      classify();
+    }; })(SAMPLES[i]);
+    el.appendChild(btn);
+  }
+})();
+
+function classify() {
+  var text = document.getElementById("demo-text").value.trim();
+  if (!text) return;
+  var btn = document.getElementById("demo-go");
+  var resultEl = document.getElementById("demo-result");
+  btn.disabled = true;
+  btn.textContent = "...";
+
+  fetch("https://playground.jeffyclassify.com/v1/predict", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({task: "banking77", text: text, threshold: 0.3})
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    var label = d.label || "unknown";
+    var conf = (d.confidence * 100).toFixed(1) + "%";
+    var ms = d.latency_ms ? d.latency_ms.toFixed(0) + "ms" : "";
+
+    var routes = {
+      terminate_account: { dept: "#retention", action: "Retention team", priority: "high" },
+      lost_or_stolen_card: { dept: "#urgent-support", action: "Card security team", priority: "critical" },
+      lost_or_stolen_phone: { dept: "#urgent-support", action: "Account security", priority: "critical" },
+      compromised_card: { dept: "#urgent-support", action: "Fraud prevention", priority: "critical" },
+    };
+    var route = routes[label] || { dept: "#general-support", action: "General queue", priority: "normal" };
+
+    var flow = document.getElementById("route-flow");
+    flow.innerHTML =
+      '<div class="route-step step-classify">' +
+        '<div class="step-icon">J</div>' +
+        '<div class="step-body">' +
+          '<div class="step-label">Jeffy classified as</div>' +
+          '<div class="step-value">' + label.replace(/_/g, ' ') + ' <span style="color:var(--fg-muted);font-weight:400">(' + conf + ')</span></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="route-step step-route">' +
+        '<div class="step-icon">&rarr;</div>' +
+        '<div class="step-body">' +
+          '<div class="step-label">Routed to</div>' +
+          '<div class="step-value">' + route.dept + '</div>' +
+          '<div style="font-size:0.82rem;color:var(--fg-muted)">' + route.action + ' &middot; priority: ' + route.priority + '</div>' +
+        '</div>' +
+      '</div>';
+
+    resultEl.className = "demo-result show";
+  })
+  .catch(function(err) {
+    var flow = document.getElementById("route-flow");
+    flow.innerHTML = '<div style="color:var(--bad);font-size:0.85rem">Request failed: ' + (err.message || err) + '</div>';
+    resultEl.className = "demo-result show";
+  })
+  .finally(function() {
+    btn.disabled = false;
+    btn.textContent = "Classify";
+  });
+}
+
+document.getElementById("demo-text").addEventListener("keydown", function(e) {
+  if (e.key === "Enter") classify();
+});
+
+document.getElementById("demo-text").value = SAMPLES[0];
+classify();
+</script>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BXL0V8163H"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-BXL0V8163H');
+</script>
+<script defer src="https://stats.jeffyclassify.com/script.js" data-website-id="f9036a1c-0cc2-4e1d-ac25-2eb9e5dfc530" data-hash="true" data-do-not-track="false"></script>
+<script defer src="https://stats.jeffyclassify.com/recorder.js" data-website-id="f9036a1c-0cc2-4e1d-ac25-2eb9e5dfc530"></script>
+
+</body>
+</html>
