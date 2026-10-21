@@ -367,6 +367,7 @@
     transition: border-color 0.15s, transform 0.15s;
     display: flex;
     flex-direction: column;
+    min-width: 0;
   }
   .demo-card:hover {
     border-color: var(--accent);
@@ -443,6 +444,7 @@
     flex-direction: column;
     gap: 6px;
     flex: 1;
+    min-width: 0;
   }
   .demo-card-title {
     font-size: 1.05rem;
@@ -456,6 +458,8 @@
     margin: 0;
     line-height: 1.5;
     flex: 1;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
   }
   .demo-card-meta {
     display: flex;
@@ -711,21 +715,24 @@
   <section class="demos-section">
     <p class="section-label">Latest</p>
     <div class="demo-cards">
-      <a class="demo-card" href="/blog/n8n-jeffy/" style="flex-direction:row;align-items:stretch">
+      <a class="demo-card" href="/blog/jeffy-vs-llm-classification/" style="flex-direction:row;align-items:stretch">
         <div class="demo-card-gif-wrap" style="flex:0 0 45%;aspect-ratio:auto;min-height:200px;background:#0a0a0c;display:flex;align-items:center;justify-content:center">
           <div style="text-align:center;padding:20px;font-family:var(--font-mono)">
-            <div style="font-size:48px;line-height:1">⚡</div>
-            <div style="font-size:0.85rem;color:#ff6d3a;margin-top:12px;font-weight:600">n8n + Jeffy</div>
-            <div style="font-size:0.7rem;color:#8a8880;margin-top:4px">15ms classification</div>
+            <div style="font-size:0.65rem;color:#8a8880;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">Accuracy on 77 classes</div>
+            <div style="display:flex;align-items:baseline;justify-content:center;gap:10px">
+              <div><div style="font-size:1.5rem;font-weight:700;color:#20d49a">94.3%</div><div style="font-size:0.6rem;color:#8a8880;margin-top:2px">Embeddings</div></div>
+              <div style="font-size:0.8rem;color:#8a8880">vs</div>
+              <div><div style="font-size:1.5rem;font-weight:700;color:#9b6dff">68%</div><div style="font-size:0.6rem;color:#8a8880;margin-top:2px">Best LLM</div></div>
+            </div>
           </div>
         </div>
         <div class="demo-card-body">
-          <h3 class="demo-card-title">Free Text Classification for n8n</h3>
-          <p class="demo-card-desc">Community node that replaces n8n's LLM-based Text Classifier. Deterministic, no API key, 70 pretrained tasks. With interactive workflow animation</p>
+          <h3 class="demo-card-title">Your LLM is Probably Overkill</h3>
+          <p class="demo-card-desc">Side-by-side comparison of LLM prompting vs frozen embeddings + logistic regression. Same task, both approaches, with code and benchmarks</p>
           <div class="demo-card-meta">
-            <span>15ms</span>
-            <span>70 tasks</span>
-            <span>No LLM</span>
+            <span>Tutorial</span>
+            <span>banking77</span>
+            <span>130x faster</span>
           </div>
         </div>
       </a>
@@ -764,9 +771,48 @@
   </section>
 
   <section class="demos-section" style="border-top:none;padding-top:0">
+    <p class="section-label">Integrations</p>
+    <div class="demo-cards" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
+      <a class="demo-card" href="/blog/n8n-jeffy/" style="flex-direction:row;align-items:stretch">
+        <div class="demo-card-gif-wrap" style="flex:0 0 45%;aspect-ratio:auto;min-height:180px;background:#0a0a0c;display:flex;align-items:center;justify-content:center">
+          <div style="text-align:center;padding:20px;font-family:var(--font-mono)">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><path d="M24 4L4 14v20l20 10 20-10V14L24 4z" fill="#ea4b71"/><path d="M24 4L4 14l20 10 20-10L24 4z" fill="#ff6d5a" opacity="0.8"/><path d="M24 24v20l20-10V14L24 24z" fill="#d63d5e"/><path d="M4 14l20 10v20L4 34V14z" fill="#ea4b71"/><text x="24" y="28" text-anchor="middle" fill="#fff" font-family="sans-serif" font-weight="700" font-size="14">n8n</text></svg>
+            <div style="font-size:0.7rem;color:#8a8880;margin-top:8px">Community node</div>
+          </div>
+        </div>
+        <div class="demo-card-body">
+          <h3 class="demo-card-title">n8n Node</h3>
+          <p class="demo-card-desc">Drop-in replacement for n8n's LLM-based Text Classifier. Deterministic, no API key, 70 pretrained tasks</p>
+          <div class="demo-card-meta">
+            <span>15ms</span>
+            <span>npm install</span>
+          </div>
+        </div>
+      </a>
+      <a class="demo-card" href="/blog/activepieces-jeffy/" style="flex-direction:row;align-items:stretch">
+        <div class="demo-card-gif-wrap" style="flex:0 0 45%;aspect-ratio:auto;min-height:180px;background:#0a0a0c;display:flex;align-items:center;justify-content:center">
+          <div style="text-align:center;padding:20px;font-family:var(--font-mono)">
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#6e41e2"/><path d="M14 16h8v4h-8zM26 16h8v4h-8zM14 24h20v4H14zM14 32h8v4h-8zM26 32h8v4h-8z" fill="#fff" opacity="0.9"/></svg>
+            <div style="font-size:0.7rem;color:#8a8880;margin-top:8px">Custom piece</div>
+          </div>
+        </div>
+        <div class="demo-card-body">
+          <h3 class="demo-card-title">Activepieces Piece</h3>
+          <p class="demo-card-desc">Classify and route messages in Activepieces workflows. Web form trigger, conditional routing, no code</p>
+          <div class="demo-card-meta">
+            <span>npm install</span>
+            <span>70 tasks</span>
+          </div>
+        </div>
+      </a>
+    </div>
+    <p style="margin-top:16px;font-size:0.82rem;color:var(--fg-muted)">Need Jeffy in another platform? <a href="mailto:nbrenner@gmail.com?subject=Jeffy%20integration%20request&body=Platform%3A%20%0AUse%20case%3A%20" id="request-integration" style="color:var(--accent)">Request an integration</a></p>
+  </section>
+
+  <section class="demos-section" style="border-top:none;padding-top:0">
     <p class="section-label">Live demos</p>
     <div class="demo-cards">
-      <a class="demo-card" href="/blog/pacman/" style="border-color:var(--cat-game)">
+      <a class="demo-card" href="/blog/pacman/">
         <div class="demo-card-gif-wrap" style="background:var(--code-bg)">
           <img class="demo-card-gif loaded" src="blog/pacman/early.gif" alt="Pac-Man AI playing via text classification" loading="lazy">
         </div>
@@ -872,7 +918,7 @@
   </section>
 
   <section class="classifiers-section">
-    <p class="section-label">17 English classifiers</p>
+    <p class="section-label">17 English classifiers <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:0.78rem;margin-left:8px"><a href="mailto:nbrenner@gmail.com?subject=Jeffy%20classifier%20request&body=Task%3A%20%0ADescription%3A%20%0AExample%20labels%3A%20" id="request-classifier" style="color:var(--accent);text-decoration:none">+ Request a classifier</a></span></p>
     <div class="clf-grid" id="clfGridEn"></div>
   </section>
 

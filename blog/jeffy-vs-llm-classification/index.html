@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Text Classification: LLM Prompting vs Embeddings + Logistic Regression — Jeffy</title>
+<meta name="description" content="Side-by-side comparison of classifying text with an LLM vs frozen embeddings + logistic regression. Same task, both approaches, with code and benchmarks.">
+<link rel="icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:title" content="Text Classification: LLM Prompting vs Embeddings + LR">
+<meta property="og:description" content="Same task, both approaches, with code and benchmarks. On 77 classes, embeddings + LR gets 94.3% while the best LLM gets 68%.">
+<meta property="og:url" content="https://jeffyclassify.com/blog/jeffy-vs-llm-classification/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Jeffy">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Text Classification: LLM Prompting vs Embeddings + LR">
+<meta name="twitter:description" content="Same task, both approaches. On 77 classes, embeddings + LR gets 94.3% while the best LLM gets 68%.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
+<style>
+:root {
+  --bg: #0a0a0c;
+  --fg: #e0dfd8;
+  --fg-muted: #8a8880;
+  --surface: #141418;
+  --surface-raised: #1c1c22;
+  --border: #2a2a30;
+  --accent: #20d49a;
+  --accent-dim: #178c68;
+  --good: #4ade80;
+  --mid: #facc15;
+  --weak: #f87171;
+  --llm-purple: #9b6dff;
+  --font-display: 'IBM Plex Mono', monospace;
+  --font-body: 'Source Sans 3', -apple-system, sans-serif;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  line-height: 1.65;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+h1 {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--accent);
+  margin: 2.5rem 0 0.3rem;
+  text-wrap: balance;
+}
+
+.dateline {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  color: var(--fg-muted);
+  margin-bottom: 1.5rem;
+}
+
+h2 {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--fg);
+  margin: 2.2rem 0 0.8rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+p { margin: 0.8rem 0; }
+
+a { color: var(--accent); text-underline-offset: 3px; }
+a:hover { color: #5ce8b8; }
+
+code {
+  font-family: var(--font-display);
+  font-size: 0.88em;
+  background: var(--surface);
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 18px;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  margin: 1rem 0;
+}
+
+pre code { background: none; padding: 0; font-size: inherit; }
+pre code.hljs { background: none; padding: 0; }
+
+.hljs-keyword, .hljs-built_in { color: #c792ea; }
+.hljs-string { color: #c3e88d; }
+.hljs-number { color: #f78c6c; }
+.hljs-comment { color: var(--fg-muted); font-style: italic; }
+.hljs-function .hljs-title, .hljs-title.function_ { color: #82aaff; }
+.hljs-params { color: var(--fg); }
+.hljs-attr, .hljs-property { color: #ffcb6b; }
+.hljs-literal { color: #f78c6c; }
+.hljs-meta { color: var(--fg-muted); }
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 1.5rem 0;
+}
+
+.stat-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.big-number {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.big-label {
+  font-size: 0.72rem;
+  color: var(--fg-muted);
+  line-height: 1.3;
+}
+
+.callout {
+  background: var(--surface-raised);
+  border-left: 3px solid var(--accent);
+  padding: 14px 18px;
+  border-radius: 0 8px 8px 0;
+  margin: 1.2rem 0;
+  font-size: 0.95rem;
+}
+
+.callout strong { color: var(--fg); }
+
+.compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 1rem 0;
+}
+
+.compare-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.compare-card h3 {
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin: 0 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.compare-card pre {
+  margin: 0;
+  font-size: 0.75rem;
+  border: none;
+  background: var(--bg);
+}
+
+.label-llm { color: var(--llm-purple); }
+.label-jeffy { color: var(--accent); }
+
+.table-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 1rem 0;
+}
+
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.results-table th {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-muted);
+  font-weight: 500;
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.results-table th:not(:first-child) { text-align: right; }
+
+.results-table td {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.results-table tr:last-child td { border-bottom: none; }
+.results-table td:not(:first-child) { text-align: right; font-family: var(--font-display); font-size: 0.8rem; }
+
+.results-table .jeffy-row td { color: var(--accent); font-weight: 600; }
+
+.dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+
+.model-name {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.verdict {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  margin: 1.2rem 0;
+}
+
+.verdict h3 {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: var(--fg);
+}
+
+.verdict ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  line-height: 1.8;
+}
+
+.download-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 1.5rem 0;
+}
+
+.dl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  padding: 10px 16px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: border-color 0.15s;
+}
+
+.dl-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.dl-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+footer {
+  margin: 2.5rem 0 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  color: var(--fg-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+
+footer a { color: var(--accent-dim); }
+footer a:hover { color: var(--accent); }
+
+@media (max-width: 520px) {
+  .stat-row { grid-template-columns: repeat(2, 1fr); }
+  .compare-grid { grid-template-columns: 1fr; }
+  h1 { font-size: 1.25rem; }
+}
+</style>
+
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BXL0V8163H"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-BXL0V8163H');</script>
+
+<!-- Umami -->
+<script defer src="https://umami.jeffyclassify.com/script.js" data-website-id="90b5f6a4-8fee-4595-b498-24ed2b6cb849"></script>
+</head>
+<body>
+
+<h1>Your LLM is probably overkill for text classification</h1>
+<div class="dateline">Oct 2026 · Tutorial · Nico Brenner</div>
+
+<p>
+  I keep seeing the same pattern. Someone needs to classify text (route support tickets, tag documents, detect intent) so they prompt an LLM. It works in the demo. A few months later the complaints are about latency, cost, and malformed JSON breaking things downstream
+</p>
+<p>
+  There's a simpler approach that gets better results on classification: freeze a sentence embedding model and train a logistic regression head on top. That's it. No fine-tuning, no GPU, no prompt engineering
+</p>
+<p>
+  I'll show both approaches on the same task so you can see the difference
+</p>
+
+<div class="stat-row">
+  <div class="stat-item">
+    <span class="big-number" style="color:var(--accent)">94.3%</span>
+    <span class="big-label">Embeddings + LR</span>
+  </div>
+  <div class="stat-item">
+    <span class="big-number" style="color:var(--llm-purple)">68%</span>
+    <span class="big-label">Best LLM (14B)</span>
+  </div>
+  <div class="stat-item">
+    <span class="big-number" style="color:var(--good)">118ms</span>
+    <span class="big-label">vs 15,400ms</span>
+  </div>
+  <div class="stat-item">
+    <span class="big-number" style="color:var(--mid)">$0</span>
+    <span class="big-label">Per prediction</span>
+  </div>
+</div>
+
+<h2>The task: banking77</h2>
+
+<p>
+  Banking77 is a customer intent dataset with 77 classes. Things like "lost_or_stolen_card", "card_payment_not_recognised", "contactless_not_working". Many labels are semantically close, which is what makes it a real test
+</p>
+<p>
+  This is the kind of problem that shows up everywhere: support ticket routing, email classification, voice assistant intent detection. Lots of categories, subtle differences between them
+</p>
+
+<h2>The LLM approach</h2>
+
+<p>Here's how you'd classify text with an LLM. Using OpenAI as the example since that's what most people reach for:</p>
+
+<pre><code class="language-python"># LLM classification with OpenAI
+import openai
+import json
+
+client = openai.OpenAI()
+
+labels = [
+    "activate_my_card", "age_limit", "apple_pay_or_google_pay",
+    "atm_support", "automatic_top_up", "balance_not_updated_after_bank_transfer",
+    "balance_not_updated_after_cheque_or_cash_deposit", "beneficiary_not_allowed",
+    "cancel_transfer", "card_about_to_expire", "card_acceptance",
+    # ... 66 more labels ...
+    "virtual_card_not_working", "visa_or_mastercard",
+    "why_verify_identity", "wrong_amount_of_cash_received",
+    "wrong_exchange_rate_for_cash_withdrawal"
+]
+
+def classify_with_llm(text):
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        temperature=0,
+        messages=[{
+            "role": "user",
+            "content": f"""Classify this customer message into exactly
+one of these categories: {json.dumps(labels)}
+
+Message: {text}
+
+Reply with ONLY the category name, nothing else."""
+        }]
+    )
+    return response.choices[0].message.content.strip()
+
+result = classify_with_llm("I was charged twice for the same transaction")
+# → "card_payment_not_recognised" (maybe, if the JSON doesn't break)</code></pre>
+
+<p>Problems with this:</p>
+<ul style="margin:0.5rem 0 1rem;padding-left:1.4rem;line-height:1.8">
+  <li>You're stuffing 77 labels into the prompt. That's a lot of tokens</li>
+  <li>The model has to parse the meaning of each label every time</li>
+  <li>Output format is unpredictable. Sometimes it adds quotes, sometimes it explains itself</li>
+  <li>Each call costs money and takes 1-15 seconds</li>
+  <li>Your data goes to an external API</li>
+</ul>
+
+<h2>The embeddings + LR approach</h2>
+
+<p>Here's the same task with Jeffy:</p>
+
+<pre><code class="language-bash"># Classification with frozen embeddings + logistic regression
+pip install jeffy-classify</code></pre>
+
+<pre><code class="language-python">from jeffy import Engine
+
+engine = Engine()
+result = engine.predict("banking77", "I was charged twice for the same transaction")
+
+print(result["label"])       # → "card_payment_not_recognised"
+print(result["confidence"])  # → 0.72
+print(result["latency_ms"])  # → 118</code></pre>
+
+<p>
+  Three lines. No prompt, no API key, no output parsing. The embedding model (BGE-large) runs locally via ONNX, and the classifier is logistic regression coefficients trained on the standard banking77 training set. The whole thing runs on CPU
+</p>
+
+<h2>Side by side</h2>
+
+<div class="compare-grid">
+  <div class="compare-card">
+    <h3><span class="dot" style="background:var(--llm-purple)"></span><span class="label-llm">LLM prompting</span></h3>
+    <pre><code class="language-python">client = openai.OpenAI()
+
+labels = ["activate_my_card",
+  "age_limit", ...]  # 77 labels
+
+response = client.chat
+  .completions.create(
+    model="gpt-4o-mini",
+    messages=[{
+      "role": "user",
+      "content": f"Classify: ..."
+    }]
+  )
+
+label = response.choices[0]
+  .message.content.strip()
+# hope it's valid</code></pre>
+  </div>
+  <div class="compare-card">
+    <h3><span class="dot" style="background:var(--accent)"></span><span class="label-jeffy">Embeddings + LR</span></h3>
+    <pre><code class="language-python">from jeffy import Engine
+
+engine = Engine()
+
+result = engine.predict(
+  "banking77",
+  "I was charged twice"
+)
+
+label = result["label"]
+score = result["confidence"]
+# always structured JSON</code></pre>
+  </div>
+</div>
+
+<h2>Benchmarks on banking77 (77 classes)</h2>
+
+<p>I ran this benchmark on a MacBook Air M2 with 16GB RAM. All LLMs via Ollama at temperature 0. 100 held-out test samples</p>
+
+<div class="table-card">
+<table class="results-table">
+  <thead>
+    <tr><th>Model</th><th>Type</th><th>Accuracy</th><th>Latency</th><th>Cost/1K</th></tr>
+  </thead>
+  <tbody>
+    <tr class="jeffy-row"><td><span class="model-name"><span class="dot" style="background:var(--accent)"></span>Jeffy (BGE + LR)</span></td><td>Embeddings</td><td>94.3%</td><td>118ms</td><td>$0</td></tr>
+    <tr><td><span class="model-name"><span class="dot" style="background:var(--llm-purple)"></span>phi4 (14B)</span></td><td>LLM</td><td>68%</td><td>15.4s</td><td>~$0.30</td></tr>
+    <tr><td><span class="model-name"><span class="dot" style="background:var(--llm-purple)"></span>gemma4 (9.6B)</span></td><td>LLM</td><td>68%</td><td>696ms</td><td>~$0.15</td></tr>
+    <tr><td><span class="model-name"><span class="dot" style="background:var(--llm-purple)"></span>gemma3 (4B)</span></td><td>LLM</td><td>64%</td><td>956ms</td><td>~$0.08</td></tr>
+    <tr><td><span class="model-name"><span class="dot" style="background:var(--llm-purple)"></span>llama3.1 (8B)</span></td><td>LLM</td><td>62%</td><td>8.9s</td><td>~$0.12</td></tr>
+    <tr><td><span class="model-name"><span class="dot" style="background:var(--llm-purple)"></span>phi4-mini (3.8B)</span></td><td>LLM</td><td>52%</td><td>181ms</td><td>~$0.05</td></tr>
+    <tr><td><span class="model-name"><span class="dot" style="background:var(--llm-purple)"></span>llama3.2 (3B)</span></td><td>LLM</td><td>46%</td><td>143ms</td><td>~$0.04</td></tr>
+    <tr><td><span class="model-name"><span class="dot" style="background:var(--llm-purple)"></span>mistral (7B)</span></td><td>LLM</td><td>39%</td><td>17s</td><td>~$0.12</td></tr>
+    <tr><td><span class="model-name"><span class="dot" style="background:var(--llm-purple)"></span>phi (2.7B)</span></td><td>LLM</td><td>30%</td><td>231ms</td><td>~$0.04</td></tr>
+    <tr><td><span class="model-name"><span class="dot" style="background:var(--llm-purple)"></span>qwen2.5 (0.5B)</span></td><td>LLM</td><td>15%</td><td>55ms</td><td>~$0.01</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="callout">
+  <strong>94.3% vs 68%.</strong> The best LLM (phi4, 14B parameters) gets 68% accuracy on 77 classes. The embedding + LR approach gets 94.3%. That's not a marginal difference. It's 26 percentage points. And it runs 130x faster
+</div>
+
+<h2>Why does the LLM struggle here?</h2>
+
+<p>
+  LLMs are generalists. They weren't trained specifically on banking intent labels. When you give them 77 options like "card_not_working", "contactless_not_working", and "card_payment_not_recognised", they have to figure out the difference from the label names alone
+</p>
+<p>
+  A trained classifier saw labeled examples during training. It learned the embedding-space boundaries between "lost my card" and "card won't tap" and "charged twice." It's not guessing from label names. It knows
+</p>
+<p>
+  This matters more as class count grows. At 2 classes (positive/negative sentiment), LLMs do fine. By 77 classes, they collapse
+</p>
+
+<h2>But what about GPT-4o / Claude?</h2>
+
+<p>
+  Hosted LLMs are better than local ones at this, sure. But the fundamental problem stays: you're parsing generated text, paying per token, sending data to an external API, and dealing with seconds of latency per call. A recent paper (<a href="https://arxiv.org/abs/2608.12875">"The Embedder's Dilemma", COLM 2026</a>) benchmarked 10 LLMs against 26 embedding models across 37 tasks and found embedding models beat LLMs on classification specifically, with LLMs costing up to 1,431x more
+</p>
+
+<h2>When to use each</h2>
+
+<div class="compare-grid">
+  <div class="verdict">
+    <h3 style="color:var(--llm-purple)">Use an LLM when:</h3>
+    <ul>
+      <li>You have no training data at all</li>
+      <li>Labels change every day</li>
+      <li>You need to explain the reasoning</li>
+      <li>Classification is 1% of the call</li>
+      <li>You're prototyping and don't care about cost yet</li>
+    </ul>
+  </div>
+  <div class="verdict">
+    <h3 style="color:var(--accent)">Use embeddings + LR when:</h3>
+    <ul>
+      <li>You have labeled data (even a few hundred examples)</li>
+      <li>You need low latency (real-time routing)</li>
+      <li>You're classifying at volume</li>
+      <li>Data can't leave your machine</li>
+      <li>You want structured output, guaranteed</li>
+    </ul>
+  </div>
+</div>
+
+<h2>Train on your own data</h2>
+
+<p>If you don't have a pretrained classifier for your task, training one takes seconds:</p>
+
+<pre><code class="language-python"># Train a custom classifier
+from jeffy import Engine
+
+engine = Engine()
+
+texts = ["reset my password", "can't log in", "upgrade my plan", "cancel subscription", ...]
+labels = ["account_access", "account_access", "billing", "billing", ...]
+
+engine.train("my_support_task", texts, labels)
+
+result = engine.predict("my_support_task", "I forgot my login")
+# → {"label": "account_access", "confidence": 0.91}</code></pre>
+
+<p>
+  The logistic regression head retrains in seconds on CPU. No GPU, no fine-tuning loop, no hyperparameter search. You can retrain it as new labeled data comes in
+</p>
+
+<h2>Try it</h2>
+
+<pre><code class="language-bash">pip install jeffy-classify
+jeffy-serve</code></pre>
+
+<p>
+  Open <code>localhost:8400</code> and you have 68 pretrained classifiers running locally. Or try them online at <a href="https://playground.jeffyclassify.com">playground.jeffyclassify.com</a>
+</p>
+<div class="download-row">
+  <a class="dl-btn" href="/blog/when-llms-fail-at-classification/">
+    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M4.715 6.542L3.343 7.914a3 3 0 104.243 4.243l1.828-1.829A3 3 0 008.586 5.5L8 6.086a1 1 0 00-.154.199 2 2 0 01.861 3.337L6.88 11.45a2 2 0 11-2.83-2.83l.793-.792a4.018 4.018 0 01-.128-1.287z"/><path d="M6.586 4.672A3 3 0 007.414 9.5l.586-.586a1 1 0 00.154-.199 2 2 0 01-.861-3.337L9.12 3.55a2 2 0 112.83 2.83l-.793.792c.112.42.155.855.128 1.287l1.372-1.372a3 3 0 00-4.243-4.243L6.586 4.672z"/></svg>
+    Full benchmark (16 models)
+  </a>
+</div>
+
+<footer>
+  <a href="https://jeffyclassify.com">Jeffy</a>
+  <a href="https://playground.jeffyclassify.com">Playground</a>
+  <a href="https://github.com/nicobrenner/jeffy"><svg id="star-icon" style="width:12px;height:12px;vertical-align:-1px;margin-right:1px;display:none" viewBox="0 0 16 16" fill="currentColor"><path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/></svg><span id="star-count"></span> on <svg style="width:14px;height:14px;vertical-align:-2px;margin:0 2px" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
+  <span style="color:var(--fg-muted)">pip install jeffy-classify</span>
+</footer>
+
+<script>hljs.highlightAll();</script>
+<script>
+fetch("https://api.github.com/repos/nicobrenner/jeffy")
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.stargazers_count != null) {
+      document.getElementById("star-icon").style.display = "inline";
+      document.getElementById("star-count").textContent = d.stargazers_count.toLocaleString();
+    }
+  })
+  .catch(function() {});
+</script>
+</body>
+</html>
