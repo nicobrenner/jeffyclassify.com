@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Polish Guy Was Right</title>
+<meta name="description" content="Frontier labs optimize English. For classifiers that does not matter, because model size stops mattering almost immediately. 51 languages, 83.3% mean accuracy, 1.8 points behind fine-tuned XLM-R, on a CPU.">
+<link rel="icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:title" content="The Polish Guy Was Right">
+<meta property="og:description" content="Frontier labs optimize English. For classifiers that does not matter: 51 languages, 83.3% mean accuracy, 1.8 points behind fine-tuned XLM-R, on a CPU.">
+<meta property="og:url" content="https://jeffyclassify.com/blog/polish-guy-was-right/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Jeffy">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The Polish Guy Was Right">
+<meta name="twitter:description" content="Frontier labs optimize English. For classifiers that does not matter: 51 languages, 83.3% mean accuracy, on a CPU.">
+<meta property="og:image" content="https://jeffyclassify.com/blog/og.png">
+<meta name="twitter:image" content="https://jeffyclassify.com/blog/og.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+:root {
+  --bg: #0a0a0c;
+  --fg: #e0dfd8;
+  --fg-muted: #8a8880;
+  --surface: #141418;
+  --surface-raised: #1c1c22;
+  --border: #2a2a30;
+  --accent: #ff6d3a;
+  --accent-dim: #c44e20;
+  --accent-glow: rgba(255,109,58,0.12);
+  --n8n-green: #20d49a;
+  --n8n-green-dim: #178c68;
+  --good: #4ade80;
+  --warn: #facc15;
+  --bad: #f87171;
+  --font-display: 'IBM Plex Mono', monospace;
+  --font-body: 'Source Sans 3', -apple-system, sans-serif;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  line-height: 1.65;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+h1 {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--accent);
+  margin: 2.5rem 0 0.3rem;
+  text-wrap: balance;
+}
+
+.dateline {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  color: var(--fg-muted);
+  margin-bottom: 1.5rem;
+}
+
+h2 {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--fg);
+  margin: 2.2rem 0 0.8rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+p { margin: 0.8rem 0; }
+
+a { color: var(--accent); text-underline-offset: 3px; }
+a:hover { color: #ff9060; }
+
+code {
+  font-family: var(--font-display);
+  font-size: 0.88em;
+  background: var(--surface);
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 18px;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  margin: 1rem 0;
+}
+
+pre code { background: none; padding: 0; font-size: inherit; }
+
+.callout {
+  background: var(--surface-raised);
+  border-left: 3px solid var(--accent);
+  padding: 14px 18px;
+  border-radius: 0 8px 8px 0;
+  margin: 1.2rem 0;
+  font-size: 0.95rem;
+}
+
+.callout strong { color: var(--fg); }
+
+/* --- STAT ROW --- */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 1.5rem 0;
+}
+
+.stat-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.big-number {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.big-label {
+  font-size: 0.72rem;
+  color: var(--fg-muted);
+  line-height: 1.3;
+}
+
+/* --- PAIN TABLE --- */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  margin: 1rem 0;
+}
+
+.compare-table th {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-muted);
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.compare-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.compare-table tr:last-child td { border-bottom: none; }
+
+.compare-table .dim { color: var(--fg-muted); }
+.compare-table .good { color: var(--good); }
+
+/* --- LIVE DEMO --- */
+.demo-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  margin: 1.2rem 0;
+}
+
+.demo-label {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-muted);
+  margin-bottom: 12px;
+}
+
+.demo-input-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.demo-input-row input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  padding: 10px 14px;
+  border-radius: 6px;
+  outline: none;
+}
+
+.demo-input-row input:focus { border-color: var(--accent); }
+
+.demo-btn {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
+
+.demo-btn:hover { background: #ff8050; }
+.demo-btn:disabled { opacity: 0.5; cursor: wait; }
+
+.demo-samples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.demo-sample {
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  color: var(--fg-muted);
+  font-size: 0.75rem;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.demo-sample:hover {
+  border-color: var(--accent);
+  color: var(--fg);
+}
+
+.demo-result {
+  display: none;
+  margin-top: 16px;
+}
+
+.demo-result.show { display: block; }
+
+.route-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.route-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.route-step .step-icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+}
+
+.route-step .step-body { min-width: 0; }
+.route-step .step-label {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  color: var(--fg-muted);
+}
+.route-step .step-value {
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.step-classify {
+  background: rgba(255,109,58,0.08);
+  border: 1px solid rgba(255,109,58,0.2);
+}
+.step-classify .step-icon { background: var(--accent); color: #fff; }
+.step-classify .step-value { color: var(--accent); }
+
+.step-route {
+  background: rgba(32,212,154,0.08);
+  border: 1px solid rgba(32,212,154,0.2);
+}
+.step-route .step-icon { background: var(--n8n-green); color: #fff; }
+.step-route .step-value { color: var(--n8n-green); }
+
+.step-time {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  color: var(--fg-muted);
+  margin-top: 6px;
+  text-align: right;
+}
+
+/* --- WORKFLOW ANIMATION --- */
+.wf-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin: 1.2rem 0;
+  overflow: hidden;
+}
+.wf-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.wf-btn {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--surface-raised);
+  color: var(--fg);
+  cursor: pointer;
+}
+.wf-btn:hover { border-color: var(--accent); }
+.wf-btn.wf-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.wf-btn.wf-primary:hover { opacity: 0.9; }
+.wf-stats {
+  margin-left: auto;
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  color: var(--fg-muted);
+}
+.wf-stats .wf-sv { color: var(--fg); font-weight: 600; }
+.wf-canvas {
+  overflow-x: auto;
+  padding: 12px 14px;
+}
+.wf-flow {
+  position: relative;
+  min-width: 720px;
+  height: 280px;
+}
+.wf-node {
+  position: absolute;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  width: 128px;
+  overflow: hidden;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.wf-node.wf-active {
+  border-color: #58a6ff;
+  box-shadow: 0 0 12px rgba(88,166,255,0.15);
+}
+.wf-nh {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+.wf-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.wf-nb {
+  padding: 6px 8px;
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  color: var(--fg-muted);
+  line-height: 1.4;
+}
+.wf-nb .wf-v { color: var(--fg); font-weight: 500; }
+.wf-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+.wf-conn { fill: none; stroke: var(--border); stroke-width: 1.5; }
+.wf-conn.wf-ca { stroke: #58a6ff; filter: drop-shadow(0 0 3px rgba(88,166,255,0.25)); }
+.wf-conn.wf-r-ret.wf-ca { stroke: #f85149; filter: drop-shadow(0 0 3px rgba(248,81,73,0.25)); }
+.wf-conn.wf-r-urg.wf-ca { stroke: #d29922; filter: drop-shadow(0 0 3px rgba(210,153,34,0.25)); }
+.wf-conn.wf-r-gen.wf-ca { stroke: #3fb950; filter: drop-shadow(0 0 3px rgba(63,185,80,0.25)); }
+.wf-pulse { r: 3; opacity: 0; }
+.wf-pulse.wf-p-ret { fill: #f85149; }
+.wf-pulse.wf-p-urg { fill: #d29922; }
+.wf-pulse.wf-p-gen { fill: #3fb950; }
+.wf-pulse.wf-p-def { fill: #58a6ff; }
+.wf-data {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border-top: 1px solid var(--border);
+}
+@media (max-width: 520px) { .wf-data { grid-template-columns: 1fr; } }
+.wf-panel { padding: 10px 14px; }
+.wf-panel + .wf-panel { border-left: 1px solid var(--border); }
+@media (max-width: 520px) { .wf-panel + .wf-panel { border-left: none; border-top: 1px solid var(--border); } }
+.wf-ph {
+  font-family: var(--font-display);
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--fg-muted);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.wf-pp {
+  font-family: var(--font-display);
+  font-size: 0.62rem;
+  line-height: 1.55;
+  color: var(--fg-muted);
+  max-height: 120px;
+  overflow-y: auto;
+}
+.wf-pp pre { margin: 0; padding: 10px 18px; white-space: pre-wrap; word-break: break-word; font-size: inherit; font-family: var(--font-display); }
+.wf-jk { color: #58a6ff; }
+.wf-js { color: #3fb950; }
+.wf-jn { color: #d29922; }
+.wf-fi {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+  font-size: 0.62rem;
+}
+.wf-fi:last-child { border-bottom: none; }
+.wf-ft { color: var(--fg-muted); flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.wf-fl {
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 0.58rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.wf-fl.wf-fret { background: rgba(248,81,73,0.15); color: #f85149; }
+.wf-fl.wf-furg { background: rgba(210,153,34,0.15); color: #d29922; }
+.wf-fl.wf-fgen { background: rgba(63,185,80,0.15); color: #3fb950; }
+.wf-fx { color: var(--fg); }
+
+/* --- INSTALL STEPS --- */
+.step-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 1rem 0;
+}
+
+.step-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.step-num {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.step-card .step-text { font-size: 0.92rem; }
+.step-card code { font-size: 0.82em; }
+
+/* --- DOWNLOAD BTN --- */
+.download-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 1.2rem 0;
+}
+
+.dl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  padding: 10px 16px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: border-color 0.15s;
+}
+
+.dl-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.dl-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+footer {
+  margin: 2.5rem 0 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  color: var(--fg-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+
+footer a { color: var(--accent-dim); }
+footer a:hover { color: var(--accent); }
+
+@media (max-width: 520px) {
+  .stat-row { grid-template-columns: repeat(2, 1fr); }
+  h1 { font-size: 1.25rem; }
+  .demo-input-row { flex-direction: column; }
+  .demo-btn { width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<h1>The Polish guy was right</h1>
+<p class="dateline">Oct 2026 &middot; Multilingual &middot; Nico Brenner</p>
+
+<p>
+  Earlier this month a site called openai-hub published an article about Jeffy. It explained, with some confidence, that Jeffy runs on "fine-tuned Qwen3.5 and Gemma 4 models"
+</p>
+
+<p>
+  Jeffy runs logistic regression
+</p>
+
+<p>
+  The article was written by an AI, which is funny on its own, given that the entire pitch here is that you should stop using an AI for this. But the mistake isn't the interesting part. The assumption underneath it is: that if something classifies text well, there must be a frontier model inside. That assumption is wrong, and somebody is paying for it
+</p>
+
+<h2>A comment I couldn't stop thinking about</h2>
+
+<p>
+  On a Show HN thread in early October, a commenter described building a personal assistant in Polish. He needed to sort incoming messages into categories. He'd tried the available tools
+</p>
+
+<p>
+  Every one of them returned "none" for every Polish message
+</p>
+
+<p>
+  Not wrong answers. No answers at all. The tools didn't disagree with him about what the message meant, they declined to have an opinion
+</p>
+
+<h2>Why Polish gets "none"</h2>
+
+<p>
+  Frontier labs optimize for English, and they're not being careless about it. English is where the benchmarks are, where the papers are, where the eval sets are, and where most of the people building the models live. The frontier is in English, so that's where the work goes. Other languages arrive later, or much later
+</p>
+
+<p>
+  If model quality came mostly from model size, that would just be a waiting game. Sit tight, and in two years Polish gets good
+</p>
+
+<h2>For classifiers, the size axis collapses</h2>
+
+<p>
+  Quality comes from two things: the data and the model's size. For a classifier, size stops mattering almost immediately. You freeze an encoder, put logistic regression on top, and feed it about 50 examples per class. The resulting head is 90 to 180 KB and trains in under a minute on a laptop CPU
+</p>
+
+<p>
+  So the bottleneck isn't the model. It's 50 good examples
+</p>
+
+<p>
+  Which is an afternoon's work for somebody who actually speaks the language, and effectively impossible for a lab that doesn't. "We need better Polish NLP" turns into a data-entry problem, and data entry is the one thing a native speaker does better than a hundred GPUs
+</p>
+
+<h2>The receipts</h2>
+
+<p>
+  We ran this on all 51 languages of MASSIVE, 60 intent classes each. Frozen multilingual embeddings, one small logistic regression head per language, no fine-tuning, no GPU
+</p>
+
+<div class="stat-row">
+  <div class="stat-item">
+    <span class="big-number" style="color:var(--accent)">83.3%</span>
+    <span class="big-label">Mean, 51 languages</span>
+  </div>
+  <div class="stat-item">
+    <span class="big-number" style="color:var(--good)">1.8pp</span>
+    <span class="big-label">Behind fine-tuned XLM-R</span>
+  </div>
+  <div class="stat-item">
+    <span class="big-number" style="color:var(--n8n-green)">50/50</span>
+    <span class="big-label">Languages beating zero-shot</span>
+  </div>
+  <div class="stat-item">
+    <span class="big-number" style="color:var(--fg)">180KB</span>
+    <span class="big-label">Per-language head</span>
+  </div>
+</div>
+
+<p>
+  Fine-tuned XLM-R Base gets 85.1%. We get 83.3%. That is a gap of 1.8 points, in exchange for giving up the GPU, the fine-tuning pipeline, and the week
+</p>
+
+<p>
+  The more useful comparison is against zero-shot cross-lingual transfer: train XLM-R on English only, then point it at the other 50 languages. That is the technical version of "wait for the frontier to get here." A small head trained on the target language's own data beat it in <strong>all 50</strong> non-English languages, by 12.6 points on average, and the advantage was largest for the languages furthest from English
+</p>
+
+<p>
+  To be straight about it: our heads get labels in the target language and the zero-shot baseline doesn't. That's not me hiding the catch, that <em>is</em> the argument. Those labels cost an afternoon
+</p>
+
+<h2>Where I had this wrong</h2>
+
+<p>
+  Until this week I'd have told you there's a limit to this argument, because the encoder still has to be good, and good means big, so we never really escape the frontier
+</p>
+
+<p>
+  Then I looked at our own encoder sweep. Same pipeline, same data, four different encoders:
+</p>
+
+<div style="overflow-x:auto">
+<table class="compare-table">
+  <thead>
+    <tr><th>Encoder</th><th>Params</th><th>ar</th><th>de</th><th>en</th><th>fr</th><th>ko</th><th>sw</th><th>Mean</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>mE5-small</td><td>118M</td><td>0.777</td><td>0.818</td><td>0.862</td><td>0.844</td><td>0.833</td><td><strong>0.793</strong></td><td><strong>0.821</strong></td></tr>
+    <tr><td>distiluse-v2</td><td>135M</td><td>0.734</td><td>0.795</td><td>0.858</td><td>0.832</td><td>0.783</td><td>0.681</td><td>0.781</td></tr>
+    <tr><td>MiniLM-L12</td><td>118M</td><td>&ndash;</td><td>0.757</td><td>0.848</td><td>0.810</td><td>0.762</td><td>0.639</td><td>0.769</td></tr>
+    <tr><td>MiniLM-L6, English only</td><td>22M</td><td>0.591</td><td>0.743</td><td><strong>0.864</strong></td><td>0.764</td><td>0.591</td><td>0.709</td><td>0.710</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>
+  Two things in there, and the second one changed my mind
+</p>
+
+<p>
+  First: mE5-small and MiniLM-L12 have <em>the same parameter count</em>, 118M, and five points of mean accuracy between them. On Swahili the gap is fifteen points, 0.793 against 0.639. Size isn't what separates them. What they were trained on is
+</p>
+
+<p>
+  Second, and this is the one: the encoder that wins on English is the 22M English-only MiniLM-L6. It beats every multilingual encoder in the table on English, including ones six times its size, and then falls off a cliff on Arabic and Korean at 0.591
+</p>
+
+<p>
+  Multilingual encoders pay a tax for their breadth. An encoder that only has to speak one language spends all of its capacity on that language
+</p>
+
+<h2>Which points at the next experiment</h2>
+
+<p>
+  If a 22M English-only encoder beats a 135M multilingual one on English, then a small Polish-only encoder plausibly beats a big multilingual one on Polish. Same architecture, its own vocabulary and tokenizer, a tiny fraction of the data
+</p>
+
+<p>
+  That's a hypothesis. I haven't run it, and I'm not going to pretend the table above is the result. But it's why I think it's worth running, and it inverts the usual plan: the way to serve 51 languages well might not be one enormous model that speaks all of them badly
+</p>
+
+<p>
+  One more piece of honesty while I'm here. The 51 language heads live on the playground right now run on MiniLM-L12, which is the <em>weakest</em> multilingual encoder in that table. LaBSE is what produced the 83.3%. Re-training the live heads is on the list
+</p>
+
+<h2>So: write 50 examples</h2>
+
+<p>
+  That's the actual point of this post
+</p>
+
+<p>
+  Pick your own categories, write about 50 examples per class in your language, and you get a working classifier that runs on your CPU in under a minute. No GPU, no API key, no per-call cost, and your text never leaves your machine. Then it goes in the catalog so the next person who speaks your language starts where you finished
+</p>
+
+<p>
+  If you speak a language that gets "none" today, you are the only person who can fix that, and it is going to take you an afternoon
+</p>
+
+<p>
+  The 51 language heads are live at <a href="https://playground.jeffyclassify.com">playground.jeffyclassify.com</a>, the code is on <a href="https://github.com/nicobrenner/jeffy">GitHub</a>, and the full 51-language write-up with all the figures is in the repo
+</p>
+
+<p>
+  And to the commenter who told me every tool returned "none" for his Polish messages: you were right, and the offer stands
+</p>
+
+<footer>
+  <a href="https://jeffyclassify.com">Jeffy</a>
+  <a href="https://playground.jeffyclassify.com">Playground</a>
+  <a href="https://github.com/nicobrenner/jeffy"><svg id="star-icon" style="width:12px;height:12px;vertical-align:-1px;margin-right:1px;display:none" viewBox="0 0 16 16" fill="currentColor"><path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/></svg><span id="star-count"></span> on GitHub</a>
+  <span style="color:var(--fg-muted)">pip install jeffy-classify</span>
+</footer>
+
+<script>
+fetch("https://api.github.com/repos/nicobrenner/jeffy")
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.stargazers_count != null) {
+      document.getElementById("star-icon").style.display = "inline";
+      document.getElementById("star-count").textContent = d.stargazers_count.toLocaleString();
+    }
+  })
+  .catch(function() {});
+</script>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BXL0V8163H"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-BXL0V8163H');
+</script>
+<script defer src="https://stats.jeffyclassify.com/script.js" data-website-id="f9036a1c-0cc2-4e1d-ac25-2eb9e5dfc530" data-hash="true" data-do-not-track="false"></script>
+
+</body>
+</html>
