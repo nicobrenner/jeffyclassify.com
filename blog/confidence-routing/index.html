@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Confidence-Based Routing: When to Trust Your Classifier - Jeffy</title>
+<meta name="description" content="How to use confidence scores and prediction margins to build three-tier routing: auto-route, suggest, or escalate. With real examples using the Jeffy API.">
+<link rel="icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:title" content="Confidence-Based Routing: When to Trust Your Classifier">
+<meta property="og:description" content="Confidence alone isn't enough. The margin between top predictions tells you when to trust the classifier vs escalate to a fallback.">
+<meta property="og:url" content="https://jeffyclassify.com/blog/confidence-routing/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Jeffy">
+<meta property="og:image" content="https://jeffyclassify.com/blog/confidence-routing/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Confidence-Based Routing: When to Trust Your Classifier">
+<meta name="twitter:description" content="Confidence alone isn't enough. The margin between top predictions tells you when to trust the classifier vs escalate to a fallback.">
+<meta name="twitter:image" content="https://jeffyclassify.com/blog/confidence-routing/og.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
+<style>
+:root {
+  --bg: #0a0a0c;
+  --fg: #e0dfd8;
+  --fg-muted: #8a8880;
+  --surface: #141418;
+  --surface-raised: #1c1c22;
+  --border: #2a2a30;
+  --accent: #20d49a;
+  --accent-dim: #178c68;
+  --good: #4ade80;
+  --mid: #facc15;
+  --weak: #f87171;
+  --route-auto: #4ade80;
+  --route-suggest: #facc15;
+  --route-escalate: #f87171;
+  --font-display: 'IBM Plex Mono', monospace;
+  --font-body: 'Source Sans 3', -apple-system, sans-serif;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  line-height: 1.65;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+h1 {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--accent);
+  margin: 2.5rem 0 0.3rem;
+  text-wrap: balance;
+}
+
+.dateline {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  color: var(--fg-muted);
+  margin-bottom: 1.5rem;
+}
+
+h2 {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--fg);
+  margin: 2.2rem 0 0.8rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+}
+
+p { margin: 0.8rem 0; }
+
+a { color: var(--accent); text-underline-offset: 3px; }
+a:hover { color: #5ce8b8; }
+
+code {
+  font-family: var(--font-display);
+  font-size: 0.88em;
+  background: var(--surface);
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 18px;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  margin: 1rem 0;
+}
+
+pre code { background: none; padding: 0; font-size: inherit; }
+pre code.hljs { background: none; padding: 0; }
+
+.hljs-keyword, .hljs-built_in { color: #c792ea; }
+.hljs-string { color: #c3e88d; }
+.hljs-number { color: #f78c6c; }
+.hljs-comment { color: var(--fg-muted); font-style: italic; }
+.hljs-function .hljs-title, .hljs-title.function_ { color: #82aaff; }
+.hljs-params { color: var(--fg); }
+.hljs-attr, .hljs-property { color: #ffcb6b; }
+.hljs-literal { color: #f78c6c; }
+.hljs-meta { color: var(--fg-muted); }
+
+.callout {
+  background: var(--surface-raised);
+  border-left: 3px solid var(--accent);
+  padding: 14px 18px;
+  border-radius: 0 8px 8px 0;
+  margin: 1.2rem 0;
+  font-size: 0.95rem;
+}
+
+.callout strong { color: var(--fg); }
+
+.tier-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 1.5rem 0;
+}
+
+.tier-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 14px;
+  text-align: center;
+}
+
+.tier-card h3 {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tier-rule {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  color: var(--fg-muted);
+  line-height: 1.6;
+  margin-top: 8px;
+}
+
+.tier-icon {
+  font-size: 1.6rem;
+  margin-bottom: 6px;
+}
+
+.margin-demo {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px;
+  margin: 1rem 0;
+}
+
+.margin-demo h4 {
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+}
+
+.bar-label {
+  width: 140px;
+  flex-shrink: 0;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--fg-muted);
+}
+
+.bar-track {
+  flex: 1;
+  height: 18px;
+  background: var(--bg);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  padding-left: 6px;
+  font-size: 0.68rem;
+  color: var(--bg);
+  font-weight: 600;
+}
+
+.margin-line {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  color: var(--fg-muted);
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+
+.margin-val {
+  font-weight: 600;
+}
+
+.table-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 1rem 0;
+}
+
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.results-table th {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-muted);
+  font-weight: 500;
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.results-table th:not(:first-child) { text-align: right; }
+
+.results-table td {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.results-table tr:last-child td { border-bottom: none; }
+.results-table td:not(:first-child) { text-align: right; font-family: var(--font-display); font-size: 0.8rem; }
+
+ul { margin: 0.5rem 0 1rem; padding-left: 1.4rem; line-height: 1.8; }
+
+footer {
+  margin: 2.5rem 0 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  color: var(--fg-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+
+footer a { color: var(--accent-dim); }
+footer a:hover { color: var(--accent); }
+
+@media (max-width: 520px) {
+  .tier-grid { grid-template-columns: 1fr; }
+  h1 { font-size: 1.25rem; }
+  .bar-label { width: 100px; }
+}
+</style>
+
+<!-- Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BXL0V8163H"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-BXL0V8163H');</script>
+
+<!-- Umami -->
+<script defer src="https://stats.jeffyclassify.com/script.js" data-website-id="f9036a1c-0cc2-4e1d-ac25-2eb9e5dfc530"></script>
+</head>
+<body>
+
+<h1>Confidence-based routing: when to trust your classifier</h1>
+<div class="dateline">Oct 2026 · Guide · Nico Brenner</div>
+
+<p>
+  You have a classifier in production. It labels support tickets, routes messages, detects intent. It gives you a prediction and a confidence score. How do you decide when to trust it?
+</p>
+<p>
+  The obvious answer: set a threshold. If confidence is above 0.8, auto-route. Below that, send to a human
+</p>
+<p>
+  That works until it doesn't
+</p>
+
+<h2>Confidence alone is misleading</h2>
+
+<p>
+  Consider two predictions on a 77-class banking intent classifier:
+</p>
+
+<div class="margin-demo">
+  <h4 style="color:var(--route-auto)">Prediction A: "I was charged twice"</h4>
+  <div class="bar-row">
+    <span class="bar-label">transaction_charged_twice</span>
+    <div class="bar-track"><div class="bar-fill" style="width:45%;background:var(--route-auto)">0.45</div></div>
+  </div>
+  <div class="bar-row">
+    <span class="bar-label">card_payment_not_recognised</span>
+    <div class="bar-track"><div class="bar-fill" style="width:10%;background:var(--fg-muted)">0.10</div></div>
+  </div>
+  <div class="bar-row">
+    <span class="bar-label">extra_charge_on_statement</span>
+    <div class="bar-track"><div class="bar-fill" style="width:6%;background:var(--fg-muted)">0.06</div></div>
+  </div>
+  <div class="margin-line">
+    <span>Margin (#1 - #2)</span>
+    <span class="margin-val" style="color:var(--route-auto)">0.35</span>
+  </div>
+</div>
+
+<div class="margin-demo">
+  <h4 style="color:var(--route-escalate)">Prediction B: "Something's wrong with my account"</h4>
+  <div class="bar-row">
+    <span class="bar-label">balance_not_updated</span>
+    <div class="bar-track"><div class="bar-fill" style="width:22%;background:var(--route-escalate)">0.22</div></div>
+  </div>
+  <div class="bar-row">
+    <span class="bar-label">account_blocked</span>
+    <div class="bar-track"><div class="bar-fill" style="width:20%;background:var(--fg-muted)">0.20</div></div>
+  </div>
+  <div class="bar-row">
+    <span class="bar-label">edit_personal_details</span>
+    <div class="bar-track"><div class="bar-fill" style="width:18%;background:var(--fg-muted)">0.18</div></div>
+  </div>
+  <div class="margin-line">
+    <span>Margin (#1 - #2)</span>
+    <span class="margin-val" style="color:var(--route-escalate)">0.02</span>
+  </div>
+</div>
+
+<p>
+  Prediction A has low confidence (0.45) but a clear winner. The classifier is pretty sure it's "transaction_charged_twice" since the next best option is far behind at 0.10. This is probably correct
+</p>
+<p>
+  Prediction B has similar confidence (0.22) but three classes are bunched together. The classifier genuinely doesn't know. This needs a human
+</p>
+<p>
+  A simple confidence threshold treats both the same. The <strong>margin</strong> between #1 and #2 tells them apart
+</p>
+
+<h2>The margin</h2>
+
+<p>
+  The margin is the gap between the top prediction's confidence and the second-best prediction's confidence. It tells you how decisive the classifier is
+</p>
+
+<div class="callout">
+  <strong>High margin = clear decision.</strong> The classifier strongly prefers one class over all others. Even if absolute confidence is moderate, the prediction is likely correct<br><br>
+  <strong>Low margin = ambiguous.</strong> Two or more classes are nearly tied. The classifier is guessing between them. Escalate this one
+</div>
+
+<p>
+  The Jeffy API now includes <code>margin</code> in every prediction response:
+</p>
+
+<pre><code class="language-bash">curl -s -X POST https://playground.jeffyclassify.com/v1/predict \
+  -H "Content-Type: application/json" \
+  -d '{"task":"banking77","text":"I was charged twice for the same transaction"}' \
+  | python3 -m json.tool</code></pre>
+
+<pre><code class="language-json">{
+  "label": "transaction_charged_twice",
+  "confidence": 0.7234,
+  "margin": 0.5891,
+  "entropy": 0.2103,
+  "probabilities": {
+    "transaction_charged_twice": 0.7234,
+    "card_payment_not_recognised": 0.1343,
+    "extra_charge_on_statement": 0.0412,
+    ...
+  }
+}</code></pre>
+
+<h2>Three-tier routing</h2>
+
+<p>
+  Combine confidence and margin to build a routing system that knows what it knows
+</p>
+
+<div class="tier-grid">
+  <div class="tier-card">
+    <div class="tier-icon">&#x2705;</div>
+    <h3 style="color:var(--route-auto)">Auto-route</h3>
+    <div class="tier-rule">
+      confidence &gt; 0.8<br>
+      AND margin &gt; 0.2
+    </div>
+  </div>
+  <div class="tier-card">
+    <div class="tier-icon">&#x1F914;</div>
+    <h3 style="color:var(--route-suggest)">Suggest + confirm</h3>
+    <div class="tier-rule">
+      confidence &gt; 0.5<br>
+      BUT margin &lt; 0.2
+    </div>
+  </div>
+  <div class="tier-card">
+    <div class="tier-icon">&#x1F6A8;</div>
+    <h3 style="color:var(--route-escalate)">Escalate to fallback</h3>
+    <div class="tier-rule">
+      confidence &lt; 0.5<br>
+      → LLM, decision model, or human
+    </div>
+  </div>
+</div>
+
+<p>
+  In Python:
+</p>
+
+<pre><code class="language-python">from jeffy import Engine
+
+engine = Engine()
+
+def route(text, task="clinc_oos"):
+    result = engine.predict(task, text)
+    conf = result["confidence"]
+    margin = result["margin"]
+
+    if conf > 0.8 and margin > 0.2:
+        return "auto", result["label"]
+    elif conf > 0.5:
+        return "suggest", result["label"]
+    else:
+        return "escalate", None</code></pre>
+
+<p>
+  The thresholds depend on your use case. A misrouted support ticket is annoying. A misclassified medical alert is dangerous. Tune accordingly
+</p>
+
+<h2>Real examples with clinc_oos</h2>
+
+<p>
+  <a href="https://playground.jeffyclassify.com/#model/clinc_oos">clinc_oos</a> covers 150 intents across 10+ industries (banking, travel, food, smart home, auto) plus an out-of-scope class. 88.5% accuracy on 151 classes. Good for testing routing since it has enough classes to produce genuinely ambiguous cases
+</p>
+
+<div class="table-card">
+<table class="results-table">
+  <thead>
+    <tr><th>Input</th><th>Prediction</th><th>Conf</th><th>Margin</th><th>Route</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>book a flight to NYC</td>
+      <td style="font-family:var(--font-display);font-size:0.78rem">book_flight</td>
+      <td style="color:var(--route-auto)">0.97</td>
+      <td style="color:var(--route-auto)">0.92</td>
+      <td style="color:var(--route-auto)">auto</td>
+    </tr>
+    <tr>
+      <td>what's my balance</td>
+      <td style="font-family:var(--font-display);font-size:0.78rem">balance</td>
+      <td style="color:var(--route-auto)">0.94</td>
+      <td style="color:var(--route-auto)">0.86</td>
+      <td style="color:var(--route-auto)">auto</td>
+    </tr>
+    <tr>
+      <td>set a timer for 10 minutes</td>
+      <td style="font-family:var(--font-display);font-size:0.78rem">timer</td>
+      <td style="color:var(--route-auto)">0.91</td>
+      <td style="color:var(--route-auto)">0.81</td>
+      <td style="color:var(--route-auto)">auto</td>
+    </tr>
+    <tr>
+      <td>remind me about the meeting</td>
+      <td style="font-family:var(--font-display);font-size:0.78rem">reminder</td>
+      <td style="color:var(--route-suggest)">0.68</td>
+      <td style="color:var(--route-suggest)">0.14</td>
+      <td style="color:var(--route-suggest)">suggest</td>
+    </tr>
+    <tr>
+      <td>I'm bored</td>
+      <td style="font-family:var(--font-display);font-size:0.78rem">fun_fact</td>
+      <td style="color:var(--route-escalate)">0.07</td>
+      <td style="color:var(--route-escalate)">0.02</td>
+      <td style="color:var(--route-escalate)">escalate</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<p>
+  "Book a flight" and "what's my balance" get auto-routed. High confidence, high margin. The classifier is sure
+</p>
+<p>
+  "Remind me about the meeting" lands in the suggest tier. The classifier picks "reminder" but "meeting_schedule" and "calendar" are close behind. A human should confirm
+</p>
+<p>
+  "I'm bored" is out-of-scope for this classifier. Low confidence, near-zero margin. This is where a fallback kicks in: pass it to an LLM or decision model that can handle open-ended inputs, not straight to a human queue
+</p>
+<p>
+  The escalation tier is also a feedback signal. If you log what gets escalated, you're building a dataset of exactly the cases your classifier can't handle yet. Retrain on that data and the boundary moves. Logistic regression heads retrain in seconds, so this loop can run continuously
+</p>
+
+<h2>Why not just ask the LLM how confident it is?</h2>
+
+<p>
+  LLMs generate confidence as text. They write "0.85" the same way they write any other token: as a plausible continuation of what came before. Asking again can give a different number. Rewording the question shifts the score. The number isn't a measurement, it's a narrative
+</p>
+<p>
+  Logistic regression produces naturally well-calibrated probabilities. The confidence comes from the training data distribution, not from a model narrating how sure it feels. Same input, same output, every time. You can backtest routing rules on historical data and know exactly what your accuracy and escalation rate will be before going live
+</p>
+
+<h2>Try it</h2>
+
+<p>
+  The <code>margin</code> field ships with every prediction. No extra parameters needed
+</p>
+
+<pre><code class="language-bash"># Try it with any classifier
+curl -s -X POST https://playground.jeffyclassify.com/v1/predict \
+  -H "Content-Type: application/json" \
+  -d '{"task":"clinc_oos","text":"I need to book a flight to New York"}'
+
+# Or locally
+pip install jeffy-classify
+jeffy-serve</code></pre>
+
+<p>
+  Available classifiers for routing:
+</p>
+<ul>
+  <li><strong>clinc_oos</strong>: 151 intents across 10+ industries, plus out-of-scope detection</li>
+  <li><strong>banking77</strong>: 77 banking customer service intents, 94.3% accuracy</li>
+  <li><strong>massive_intent</strong>: 60 intents, works in 51 languages</li>
+  <li><strong>sms_spam</strong>: binary spam detection, 99.1% accuracy</li>
+</ul>
+<p>
+  Or <a href="/blog/jeffy-vs-llm-classification/">train on your own data</a> in seconds
+</p>
+
+<footer>
+  <a href="https://jeffyclassify.com">Jeffy</a>
+  <a href="https://playground.jeffyclassify.com">Playground</a>
+  <a href="/blog/">Blog</a>
+  <a href="https://github.com/nicobrenner/jeffy"><svg id="star-icon" style="width:12px;height:12px;vertical-align:-1px;margin-right:1px;display:none" viewBox="0 0 16 16" fill="currentColor"><path d="M8 .25a.75.75 0 01.673.418l1.882 3.815 4.21.612a.75.75 0 01.416 1.279l-3.046 2.97.719 4.192a.75.75 0 01-1.088.791L8 12.347l-3.766 1.98a.75.75 0 01-1.088-.79l.72-4.194L.818 6.374a.75.75 0 01.416-1.28l4.21-.611L7.327.668A.75.75 0 018 .25z"/></svg><span id="star-count"></span> on <svg style="width:14px;height:14px;vertical-align:-2px;margin:0 2px" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
+  <span style="color:var(--fg-muted)">pip install jeffy-classify</span>
+</footer>
+
+<script>hljs.highlightAll();</script>
+<script>
+fetch("https://api.github.com/repos/nicobrenner/jeffy")
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (d.stargazers_count != null) {
+      document.getElementById("star-icon").style.display = "inline";
+      document.getElementById("star-count").textContent = d.stargazers_count.toLocaleString();
+    }
+  })
+  .catch(function() {});
+</script>
+</body>
+</html>

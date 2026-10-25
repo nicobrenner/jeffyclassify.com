@@ -731,16 +731,34 @@ footer a:hover { color: var(--accent); }
   </div>
 </div>
 
+<div class="callout">
+  <strong>On n8n Cloud?</strong> Cloud only allows installing <em>verified</em> community nodes, so steps 1 to 3 above apply to self-hosted n8n. On Cloud, use an <strong>HTTP Request</strong> node instead, which works identically:
+  <br><br>
+  Method <code>POST</code>, URL <code>https://playground.jeffyclassify.com/v1/predict</code>, JSON body:
+  <br>
+  <code>{ "text": "{{ $json.message }}", "task": "banking77" }</code>
+  <br><br>
+  The response carries <code>label</code>, <code>confidence</code>, <code>margin</code> and <code>probabilities</code>, so you can branch on it with a Switch or IF node exactly as with the node. There's a ready-made Cloud workflow below
+</div>
+
 <h2>Download the workflow</h2>
 
 <p>
-  Import this into n8n to get the customer support router from the demo above. Uses Manual Trigger + random sample messages so you can run it right away
+  Import either of these into n8n. They're the same workflow twice, differing only in how they call Jeffy: the first uses the community node (self-hosted), the second uses plain HTTP Request nodes so it runs on n8n Cloud too. Both start from a Manual Trigger with sample messages, so you can run them right away with no credentials beyond the server URL
 </p>
 
 <div class="download-row">
   <a class="dl-btn" href="customer-support-router.json" target="_blank">
     <svg viewBox="0 0 16 16" fill="currentColor"><path d="M7.47 10.78a.75.75 0 001.06 0l3.75-3.75a.75.75 0 00-1.06-1.06L8.75 8.44V1.75a.75.75 0 00-1.5 0v6.69L4.78 5.97a.75.75 0 00-1.06 1.06l3.75 3.75zM3.75 13a.75.75 0 000 1.5h8.5a.75.75 0 000-1.5h-8.5z"/></svg>
     customer-support-router.json
+  </a>
+  <a class="dl-btn" href="cloud-http-router.json" target="_blank">
+    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M7.47 10.78a.75.75 0 001.06 0l3.75-3.75a.75.75 0 00-1.06-1.06L8.75 8.44V1.75a.75.75 0 00-1.5 0v6.69L4.78 5.97a.75.75 0 00-1.06 1.06l3.75 3.75zM3.75 13a.75.75 0 000 1.5h8.5a.75.75 0 000-1.5h-8.5z"/></svg>
+    cloud-http-router.json (n8n Cloud)
+  </a>
+  <a class="dl-btn" href="https://github.com/nicobrenner/n8n-nodes-jeffy#example-workflows" target="_blank">
+    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1.5a6.5 6.5 0 100 13 6.5 6.5 0 000-13zM0 8a8 8 0 1116 0A8 8 0 010 8zm9 3a1 1 0 11-2 0 1 1 0 012 0zm-.25-6.25a.75.75 0 00-1.5 0v4a.75.75 0 001.5 0v-4z"/></svg>
+    What each branch does
   </a>
   <a class="dl-btn" href="https://github.com/nicobrenner/n8n-nodes-jeffy" target="_blank">
     <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
@@ -751,7 +769,7 @@ footer a:hover { color: var(--accent); }
 <h2>Self-host or use the playground</h2>
 
 <p>
-  The community node defaults to <code>playground.jeffyclassify.com</code>, a free public instance with all 70 classifiers loaded. No API key, no signup
+  The community node defaults to <code>playground.jeffyclassify.com</code>, a free public instance with 70+ classifiers loaded. No API key, no signup
 </p>
 
 <p>

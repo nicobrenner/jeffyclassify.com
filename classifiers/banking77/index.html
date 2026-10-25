@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Banking77 - Intent Classifier</title>
+<meta name="description" content="Classify banking customer messages into 77 intents. 94.3% accuracy, under 80ms, runs on CPU. Try it live or pip install jeffy-classify.">
+<meta property="og:title" content="Banking77 — Intent Classifier by Jeffy">
+<meta property="og:description" content="Classify banking customer messages into 77 intents. 94.3% accuracy, under 80ms, runs on CPU.">
+<meta property="og:image" content="https://jeffyclassify.com/classifiers/banking77/og.png">
+<meta property="og:url" content="https://jeffyclassify.com/classifiers/banking77/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Jeffy">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Banking77 — Intent Classifier by Jeffy">
+<meta name="twitter:description" content="Classify banking customer messages into 77 intents. 94.3% accuracy, under 80ms, runs on CPU.">
+<meta name="twitter:image" content="https://jeffyclassify.com/classifiers/banking77/og.png">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="canonical" href="https://jeffyclassify.com/classifiers/banking77/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BXL0V8163H"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-BXL0V8163H')</script>
+<script defer src="https://stats.jeffyclassify.com/script.js" data-website-id="f9036a1c-0cc2-4e1d-ac25-2eb9e5dfc530" data-tag="classifier-banking77"></script>
+<script defer src="https://stats.jeffyclassify.com/recorder.js" data-website-id="f9036a1c-0cc2-4e1d-ac25-2eb9e5dfc530" data-tag="classifier-banking77"></script>
+<style>
+:root {
+  --bg: #FFFFFF;
+  --bg-surface: #F5F3EF;
+  --fg: #1A1714;
+  --fg-muted: #7A756E;
+  --fg-dim: #A09A93;
+  --accent: #C64E1E;
+  --accent-hover: #A84218;
+  --teal: #2B7A5F;
+  --code-bg: #1A1714;
+  --code-fg: #E4E0DB;
+  --code-prompt: #E8873A;
+  --code-string: #7EC97E;
+  --code-key: #7AADE8;
+  --code-num: #D4A0E8;
+  --code-comment: #6B6560;
+  --border: #E5E1DC;
+  --cat-intent: #2B7A5F;
+  --font-display: 'Manrope', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111015;
+    --bg-surface: #1C1A22;
+    --fg: #E4E0DB;
+    --fg-muted: #8A857F;
+    --fg-dim: #5E5952;
+    --accent: #E86B35;
+    --accent-hover: #F07840;
+    --teal: #3DA87A;
+    --code-bg: #0A090D;
+    --code-fg: #D4D0CB;
+    --border: #2E2A28;
+    --cat-intent: #3DA87A;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111015;
+  --bg-surface: #1C1A22;
+  --fg: #E4E0DB;
+  --fg-muted: #8A857F;
+  --fg-dim: #5E5952;
+  --accent: #E86B35;
+  --accent-hover: #F07840;
+  --teal: #3DA87A;
+  --code-bg: #0A090D;
+  --code-fg: #D4D0CB;
+  --border: #2E2A28;
+  --cat-intent: #3DA87A;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  font-family: var(--font-display);
+  background: var(--bg);
+  color: var(--fg);
+  padding: 0 24px;
+  line-height: 1.55;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+.page { max-width: 720px; margin: 0 auto; }
+
+/* Nav */
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-block: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.nav-brand {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--fg);
+  text-decoration: none;
+  letter-spacing: -0.03em;
+}
+.nav-brand:hover { color: var(--accent); }
+.nav-links {
+  display: flex;
+  gap: 20px;
+  list-style: none;
+  margin: 0; padding: 0;
+}
+.nav-links a {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--fg-muted);
+  text-decoration: none;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.nav-links a:hover { color: var(--accent); }
+
+/* Breadcrumb */
+.breadcrumb {
+  font-size: 0.82rem;
+  color: var(--fg-muted);
+  margin-top: 20px;
+}
+.breadcrumb a { color: var(--fg-muted); text-decoration: none; }
+.breadcrumb a:hover { color: var(--accent); }
+.breadcrumb .sep { margin: 0 6px; }
+
+/* Header */
+.clf-header { margin-top: 24px; }
+.clf-header h1 {
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin: 0 0 8px;
+  line-height: 1.15;
+}
+.clf-header .desc {
+  font-size: 1.05rem;
+  color: var(--fg-muted);
+  margin: 0 0 20px;
+  max-width: 560px;
+}
+
+/* Stats row */
+.stats-row {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 32px;
+}
+.stat { display: flex; flex-direction: column; gap: 2px; }
+.stat .v {
+  font-family: var(--font-mono);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--teal);
+}
+.stat .l {
+  font-size: 0.75rem;
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Try it */
+.try-section { margin-bottom: 36px; }
+.try-section h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 12px;
+  letter-spacing: -0.01em;
+}
+.try-textarea {
+  width: 100%;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  color: var(--fg);
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.5;
+}
+.try-textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.try-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+.run-btn {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 10px 24px;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+}
+.run-btn:hover { background: var(--accent-hover); }
+.run-btn:disabled { opacity: 0.5; cursor: default; }
+.latency {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--fg-dim);
+}
+
+/* Result */
+.result { display: none; margin-top: 16px; }
+.result.show { display: block; }
+.result-label {
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--teal);
+  margin-bottom: 12px;
+}
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+  font-size: 0.82rem;
+}
+.bar-name {
+  min-width: 140px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--fg-muted);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bar-track {
+  flex: 1;
+  height: 8px;
+  background: var(--bg-surface);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: var(--teal);
+  transition: width 0.3s ease;
+}
+.bar-pct {
+  min-width: 42px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--fg-dim);
+}
+.feedback-row {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  color: var(--fg-muted);
+}
+.fb-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+.fb-btn:hover { border-color: var(--fg-muted); }
+.fb-btn.voted { border-color: var(--teal); background: var(--bg-surface); }
+.fb-msg { font-size: 0.78rem; color: var(--teal); }
+.err-msg { color: var(--accent); font-size: 0.82rem; margin-top: 8px; }
+
+/* Labels */
+.labels-section { margin-bottom: 36px; }
+.labels-section h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 12px;
+  letter-spacing: -0.01em;
+}
+.chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chip {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 4px 10px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--fg-muted);
+}
+
+/* Code */
+.code-section { margin-bottom: 36px; }
+.code-section h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 12px;
+  letter-spacing: -0.01em;
+}
+.code-block {
+  position: relative;
+  background: var(--code-bg);
+  border-radius: 8px;
+  padding: 16px 18px;
+  overflow-x: auto;
+  margin-bottom: 12px;
+}
+.code-block pre {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--code-fg);
+  white-space: pre;
+}
+.code-block .cp-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  padding: 4px 10px;
+  background: rgba(255,255,255,0.08);
+  color: var(--code-fg);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.code-block .cp-btn:hover { background: rgba(255,255,255,0.15); }
+.code-lang {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--fg-dim);
+  margin-bottom: 6px;
+}
+
+/* Info */
+.info-section { margin-bottom: 36px; }
+.info-section h2 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 12px;
+  letter-spacing: -0.01em;
+}
+.info-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 16px;
+  font-size: 0.88rem;
+}
+.info-key { color: var(--fg-muted); }
+.info-val { color: var(--fg); font-family: var(--font-mono); font-size: 0.82rem; }
+
+/* Footer */
+.footer {
+  padding-block: 28px;
+  border-top: 1px solid var(--border);
+  margin-top: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.footer a { font-size: 0.82rem; color: var(--fg-muted); text-decoration: none; }
+.footer a:hover { color: var(--accent); }
+
+@media (max-width: 500px) {
+  .bar-name { min-width: 90px; font-size: 0.68rem; }
+  .stats-row { gap: 16px; }
+  .nav-links { gap: 14px; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<nav class="nav">
+  <a class="nav-brand" href="/">jeffy</a>
+  <ul class="nav-links">
+    <li><a href="/">Home</a></li>
+    <li><a href="https://playground.jeffyclassify.com">Playground</a></li>
+    <li><a href="/blog/">Blog</a></li>
+    <li><a href="https://github.com/nicobrenner/jeffy">GitHub</a></li>
+  </ul>
+</nav>
+
+<div class="breadcrumb">
+  <a href="/">Home</a><span class="sep">/</span>
+  <a href="/classifiers/">Classifiers</a><span class="sep">/</span>
+  Banking77
+</div>
+
+<div class="clf-header">
+  <h1>Banking77</h1>
+  <p class="desc">Classify banking customer service messages into 77 fine-grained intents. Trained on the Banking77 dataset, which covers real questions about cards, transfers, payments, identity verification, and account management</p>
+</div>
+
+<div class="stats-row">
+  <div class="stat"><span class="v">94.3%</span><span class="l">Test Accuracy</span></div>
+  <div class="stat"><span class="v">77</span><span class="l">Classes</span></div>
+  <div class="stat"><span class="v">10,000</span><span class="l">Training Examples</span></div>
+  <div class="stat"><span class="v">&lt;80ms</span><span class="l">Latency</span></div>
+</div>
+
+<div class="try-section">
+  <h2>Try it</h2>
+  <textarea class="try-textarea" id="try-text" rows="3" spellcheck="false" placeholder="Type a banking question...">I've been charged twice for the same transaction, can I get a refund?</textarea>
+  <div class="try-row">
+    <span class="latency" id="latency"></span>
+    <button class="run-btn" id="run-btn" onclick="classify()">Classify &rarr;</button>
+  </div>
+  <div class="err-msg" id="err"></div>
+  <div class="result" id="result">
+    <div class="result-label" id="result-label"></div>
+    <div id="result-bars"></div>
+    <div class="feedback-row">
+      <span>Was this correct?</span>
+      <button class="fb-btn" id="fb-up" onclick="feedback(1)">&#128077;</button>
+      <button class="fb-btn" id="fb-down" onclick="feedback(0)">&#128078;</button>
+      <span class="fb-msg" id="fb-msg"></span>
+    </div>
+  </div>
+</div>
+
+<div class="code-section">
+  <h2>Use it</h2>
+  <div class="code-lang">Python</div>
+  <div class="code-block">
+    <pre><span style="color:var(--code-key)">from</span> jeffy.engine <span style="color:var(--code-key)">import</span> Engine
+
+engine = Engine()
+engine.load()
+
+result = engine.predict(<span style="color:var(--code-string)">"banking77"</span>, <span style="color:var(--code-string)">"I've been charged twice"</span>)
+print(result[<span style="color:var(--code-string)">"label"</span>])  <span style="color:var(--code-comment)"># transaction_charged_twice</span></pre>
+    <button class="cp-btn" onclick="cpCode(this)">Copy</button>
+  </div>
+  <div class="code-lang">curl</div>
+  <div class="code-block">
+    <pre><span style="color:var(--code-prompt)">$</span> curl -s -X POST https://playground.jeffyclassify.com/v1/predict \
+  -H <span style="color:var(--code-string)">"Content-Type: application/json"</span> \
+  -d <span style="color:var(--code-string)">'{"text":"I was charged twice","task":"banking77"}'</span></pre>
+    <button class="cp-btn" onclick="cpCode(this)">Copy</button>
+  </div>
+  <div style="font-size:0.82rem;color:var(--fg-muted)">
+    <code style="font-family:var(--font-mono);font-size:0.78rem">pip install jeffy-classify</code>
+  </div>
+</div>
+
+<div class="labels-section">
+  <h2>All 77 labels</h2>
+  <div class="chip-grid" id="labels"></div>
+</div>
+
+<div class="info-section">
+  <h2>Model details</h2>
+  <div class="info-grid">
+    <span class="info-key">Task ID</span><span class="info-val">banking77</span>
+    <span class="info-key">Encoder</span><span class="info-val">BAAI/bge-large-en-v1.5</span>
+    <span class="info-key">Type</span><span class="info-val">Text classifier (logistic regression)</span>
+    <span class="info-key">Train accuracy</span><span class="info-val">98.4%</span>
+    <span class="info-key">Test accuracy</span><span class="info-val">94.3%</span>
+    <span class="info-key">License</span><span class="info-val">CC BY 4.0</span>
+    <span class="info-key">Source</span><span class="info-val">Banking77 dataset</span>
+  </div>
+</div>
+
+<footer class="footer">
+  <div>
+    <a href="/">Jeffy</a> &middot;
+    <a href="/classifiers/">All classifiers</a> &middot;
+    <a href="https://playground.jeffyclassify.com">Playground</a>
+  </div>
+  <div>
+    <a href="https://github.com/nicobrenner/jeffy">GitHub</a>
+  </div>
+</footer>
+
+</div>
+
+<script>
+var API="https://playground.jeffyclassify.com";
+var TASK="banking77";
+var lastPred=null;
+
+var labels=["activate_my_card","age_limit","apple_pay_or_google_pay","atm_support","automatic_top_up","balance_not_updated_after_bank_transfer","balance_not_updated_after_cheque_or_cash_deposit","beneficiary_not_allowed","cancel_transfer","card_about_to_expire","card_acceptance","card_arrival","card_delivery_estimate","card_linking","card_not_working","card_payment_fee_charged","card_payment_not_recognised","card_payment_wrong_exchange_rate","card_swallowed","cash_withdrawal_charge","cash_withdrawal_not_recognised","change_pin","compromised_card","contactless_not_working","country_support","declined_card_payment","declined_cash_withdrawal","declined_transfer","direct_debit_payment_not_recognised","disposable_card_limits","edit_personal_details","exchange_charge","exchange_rate","exchange_via_app","extra_charge_on_statement","failed_transfer","fiat_currency_support","get_disposable_virtual_card","get_physical_card","getting_spare_card","getting_virtual_card","lost_or_stolen_card","lost_or_stolen_phone","order_physical_card","passcode_forgotten","pending_card_payment","pending_cash_withdrawal","pending_top_up","pending_transfer","pin_blocked","receiving_money","Refund_not_showing_up","request_refund","reverted_card_payment?","supported_cards_and_currencies","terminate_account","top_up_by_bank_transfer_charge","top_up_by_card_charge","top_up_by_cash_or_cheque","top_up_failed","top_up_limits","top_up_reverted","topping_up_by_card","transaction_charged_twice","transfer_fee_charged","transfer_into_account","transfer_not_received_by_recipient","transfer_timing","unable_to_verify_identity","verify_my_identity","verify_source_of_funds","verify_top_up","virtual_card_not_working","visa_or_mastercard","why_verify_identity","wrong_amount_of_cash_received","wrong_exchange_rate_for_cash_withdrawal"];
+
+document.getElementById("labels").innerHTML=labels.map(function(l){return'<span class="chip">'+l.replace(/_/g," ")+'</span>';}).join("");
+
+function classify(){
+  var text=document.getElementById("try-text").value.trim();
+  if(!text)return;
+  var btn=document.getElementById("run-btn");
+  btn.disabled=true;btn.textContent="...";
+  document.getElementById("err").textContent="";
+  document.getElementById("result").classList.remove("show");
+  var t0=performance.now();
+  fetch(API+"/v1/predict",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({text:text,task:TASK})
+  }).then(function(r){return r.json();}).then(function(d){
+    var ms=Math.round(performance.now()-t0);
+    document.getElementById("latency").textContent=ms+"ms";
+    if(d.error){document.getElementById("err").textContent=d.error;return;}
+    lastPred={task:TASK,label:d.label,confidence:d.confidence};
+    document.getElementById("result-label").textContent=d.label.replace(/_/g," ");
+    var bars="";
+    var tops=d.top_predictions||[];
+    for(var i=0;i<Math.min(tops.length,8);i++){
+      var p=tops[i];
+      bars+='<div class="bar-row"><span class="bar-name">'+p.label.replace(/_/g," ")+'</span><div class="bar-track"><div class="bar-fill" style="width:'+Math.round(p.confidence*100)+'%"></div></div><span class="bar-pct">'+Math.round(p.confidence*1000)/10+'%</span></div>';
+    }
+    document.getElementById("result-bars").innerHTML=bars;
+    document.getElementById("result").classList.add("show");
+    document.getElementById("fb-up").classList.remove("voted");
+    document.getElementById("fb-down").classList.remove("voted");
+    document.getElementById("fb-up").disabled=false;
+    document.getElementById("fb-down").disabled=false;
+    document.getElementById("fb-msg").textContent="";
+  }).catch(function(e){
+    document.getElementById("err").textContent="Connection error. Is the API running?";
+  }).finally(function(){
+    btn.disabled=false;btn.textContent="Classify →";
+  });
+}
+
+function feedback(up){
+  if(!lastPred)return;
+  var btn=up?document.getElementById("fb-up"):document.getElementById("fb-down");
+  document.getElementById("fb-up").disabled=true;
+  document.getElementById("fb-down").disabled=true;
+  btn.classList.add("voted");
+  document.getElementById("fb-msg").textContent=up?"Thanks!":"Thanks for the feedback";
+  fetch(API+"/v1/event",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({type:"feedback",task:lastPred.task,data:{predicted:lastPred.label,vote:up?"up":"down",confidence:lastPred.confidence}})}).catch(function(){});
+  lastPred=null;
+}
+
+function cpCode(btn){
+  var pre=btn.parentElement.querySelector("pre");
+  var text=pre.textContent;
+  navigator.clipboard.writeText(text).then(function(){
+    btn.textContent="Copied";
+    setTimeout(function(){btn.textContent="Copy";},1500);
+  }).catch(function(){});
+}
+
+document.getElementById("try-text").addEventListener("keydown",function(e){
+  if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();classify();}
+});
+</script>
+</body>
+</html>

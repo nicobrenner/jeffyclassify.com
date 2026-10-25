@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Blog - Jeffy</title>
+<meta name="description" content="Articles on text classification, benchmarks, integrations, and creative experiments with Jeffy classifiers.">
+<meta property="og:title" content="Blog — Jeffy">
+<meta property="og:description" content="Articles on text classification, benchmarks, integrations, and creative experiments with Jeffy classifiers.">
+<meta property="og:url" content="https://jeffyclassify.com/blog/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Jeffy">
+<meta property="og:image" content="https://jeffyclassify.com/blog/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://jeffyclassify.com/blog/og.png">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="canonical" href="https://jeffyclassify.com/blog/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BXL0V8163H"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-BXL0V8163H')</script>
+<script defer src="https://stats.jeffyclassify.com/script.js" data-website-id="f9036a1c-0cc2-4e1d-ac25-2eb9e5dfc530" data-tag="blog-index"></script>
+<script defer src="https://stats.jeffyclassify.com/recorder.js" data-website-id="f9036a1c-0cc2-4e1d-ac25-2eb9e5dfc530" data-tag="blog-index"></script>
+<style>
+:root {
+  --bg: #0a0a0c;
+  --fg: #e0dfd8;
+  --fg-muted: #8a8880;
+  --surface: #141418;
+  --surface-raised: #1c1c22;
+  --border: #2a2a30;
+  --accent: #20d49a;
+  --accent-dim: #178c68;
+  --tag-bench: #e86b35;
+  --tag-integration: #3da87a;
+  --tag-demo: #9b6dff;
+  --tag-guide: #5da0e8;
+  --font-display: 'IBM Plex Mono', monospace;
+  --font-body: 'Source Sans 3', -apple-system, sans-serif;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  line-height: 1.65;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 20px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Nav — matches homepage */
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-block: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.nav-brand {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--fg);
+  text-decoration: none;
+  letter-spacing: -0.03em;
+}
+.nav-brand:hover { color: var(--accent); }
+.nav-links {
+  display: flex;
+  gap: 24px;
+  list-style: none;
+  margin: 0; padding: 0;
+}
+.nav-links a {
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--fg-muted);
+  text-decoration: none;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.nav-links a:hover { color: var(--accent); }
+
+/* Hero */
+.hero {
+  padding: 2.2rem 0 1.8rem;
+}
+.hero h1 {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin: 0 0 0.6rem;
+}
+.hero-desc {
+  font-size: 1rem;
+  color: var(--fg);
+  margin: 0 0 1.2rem;
+  max-width: 560px;
+  line-height: 1.6;
+}
+.hero-desc span { color: var(--fg-muted); }
+
+/* Live classification ticker */
+.ticker {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 18px;
+  position: relative;
+  height: 52px;
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+}
+.ticker-item {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding: 14px 18px;
+  gap: 8px;
+  opacity: 0;
+  animation: tick 16s infinite;
+}
+.ticker-item:nth-child(1) { animation-delay: 0s; }
+.ticker-item:nth-child(2) { animation-delay: 4s; }
+.ticker-item:nth-child(3) { animation-delay: 8s; }
+.ticker-item:nth-child(4) { animation-delay: 12s; }
+
+@keyframes tick {
+  0%     { opacity: 0; transform: translateY(6px); }
+  3%     { opacity: 1; transform: translateY(0); }
+  22%    { opacity: 1; transform: translateY(0); }
+  25%    { opacity: 0; transform: translateY(-6px); }
+  100%   { opacity: 0; }
+}
+
+.ticker-input { color: var(--fg-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ticker-arrow { color: var(--accent-dim); flex-shrink: 0; }
+.ticker-label { color: var(--accent); font-weight: 600; white-space: nowrap; }
+.ticker-conf {
+  margin-left: auto;
+  color: var(--fg-muted);
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+.ticker-conf b { color: var(--accent); font-weight: 500; }
+
+/* Posts */
+.posts {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.post-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  text-decoration: none;
+  color: inherit;
+  padding: 20px 16px;
+  border: 1px solid var(--border);
+  border-bottom: none;
+  background: var(--surface);
+  transition: background 0.15s, border-color 0.15s;
+}
+.post-card:first-child { border-radius: 8px 8px 0 0; }
+.post-card:last-child { border-bottom: 1px solid var(--border); border-radius: 0 0 8px 8px; }
+.post-card:only-child { border-radius: 8px; border-bottom: 1px solid var(--border); }
+.post-card:hover { background: var(--surface-raised); border-color: #3a3a42; }
+.post-card:hover + .post-card { border-top-color: #3a3a42; }
+
+.post-content { flex: 1; min-width: 0; }
+
+.post-tag {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  border-radius: 3px;
+  margin-bottom: 6px;
+}
+.tag-benchmark { background: rgba(232,107,53,0.15); color: var(--tag-bench); }
+.tag-integration { background: rgba(61,168,122,0.15); color: var(--tag-integration); }
+.tag-demo { background: rgba(155,109,255,0.15); color: var(--tag-demo); }
+.tag-guide { background: rgba(93,160,232,0.15); color: var(--tag-guide); }
+
+.post-title {
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+  line-height: 1.35;
+}
+.post-card:hover .post-title { color: var(--accent); }
+
+.post-desc {
+  font-size: 0.85rem;
+  color: var(--fg-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Card icons */
+.card-icon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 16px;
+}
+.card-icon { pointer-events: none; }
+.card-icon svg { overflow: visible; }
+
+/* Benchmark: animated bar chart */
+.icon-bench rect { transition: height 0.3s, y 0.3s; }
+.icon-bench .b1 { animation: bar1 4s ease-in-out infinite; }
+.icon-bench .b2 { animation: bar2 4s ease-in-out infinite 0.3s; }
+.icon-bench .b3 { animation: bar3 4s ease-in-out infinite 0.6s; }
+
+@keyframes bar1 {
+  0%, 100% { opacity: 0.5; transform: scaleY(0.6); }
+  50% { opacity: 0.9; transform: scaleY(1); }
+}
+@keyframes bar2 {
+  0%, 100% { opacity: 0.7; transform: scaleY(0.8); }
+  50% { opacity: 1; transform: scaleY(1); }
+}
+@keyframes bar3 {
+  0%, 100% { opacity: 0.6; transform: scaleY(0.5); }
+  50% { opacity: 1; transform: scaleY(1); }
+}
+
+/* Integration: traveling pulse between nodes */
+.icon-flow .pulse { animation: flow-pulse 3s ease-in-out infinite; }
+.icon-flow .node { animation: node-glow 3s ease-in-out infinite; }
+.icon-flow .node-r { animation: node-glow 3s ease-in-out infinite 1.5s; }
+
+@keyframes flow-pulse {
+  0%   { cx: 8; opacity: 0; }
+  10%  { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { cx: 32; opacity: 0; }
+}
+@keyframes node-glow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* Guide: compass needle swing */
+.icon-gauge .needle {
+  transform-origin: 20px 24px;
+  animation: swing 5s ease-in-out infinite;
+}
+.icon-gauge .arc { opacity: 0.4; }
+
+@keyframes swing {
+  0%, 100% { transform: rotate(-40deg); }
+  50% { transform: rotate(40deg); }
+}
+
+/* Demo: bouncing particle constellation */
+.icon-demo .d1 { animation: bounce1 3s ease-in-out infinite; }
+.icon-demo .d2 { animation: bounce2 3s ease-in-out infinite 0.4s; }
+.icon-demo .d3 { animation: bounce3 3s ease-in-out infinite 0.8s; }
+
+@keyframes bounce1 {
+  0%, 100% { transform: translateY(0); opacity: 0.6; }
+  50% { transform: translateY(-5px); opacity: 1; }
+}
+@keyframes bounce2 {
+  0%, 100% { transform: translateY(0); opacity: 0.5; }
+  50% { transform: translateY(-7px); opacity: 1; }
+}
+@keyframes bounce3 {
+  0%, 100% { transform: translateY(0); opacity: 0.7; }
+  50% { transform: translateY(-4px); opacity: 1; }
+}
+
+/* Footer */
+footer {
+  margin: 2.5rem 0 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  color: var(--fg-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+footer a { color: var(--accent-dim); text-decoration: none; }
+footer a:hover { color: var(--accent); }
+
+@media (max-width: 480px) {
+  .hero h1 { font-size: 1.25rem; }
+  .post-title { font-size: 0.95rem; }
+  .ticker { font-size: 0.7rem; height: 48px; }
+  .ticker-item { padding: 12px 14px; }
+  .card-icon { width: 32px; height: 32px; margin-top: 12px; }
+  .nav-links { gap: 12px; }
+  .nav-links a { font-size: 0.72rem; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav" aria-label="Main navigation">
+  <a class="nav-brand" href="/">Jeffy</a>
+  <ul class="nav-links">
+    <li><a href="https://playground.jeffyclassify.com">Playground</a></li>
+    <li><a href="/blog/">Blog</a></li>
+    <li><a href="https://github.com/nicobrenner/jeffy">GitHub</a></li>
+  </ul>
+</nav>
+
+<div class="hero">
+  <h1>Blog</h1>
+  <p class="hero-desc">
+    Text classification without GPUs, API keys, or prompt engineering.
+    <span>Benchmarks, integrations, and things we've built with 15ms classifiers</span>
+  </p>
+
+  <div class="ticker">
+    <div class="ticker-item">
+      <span class="ticker-input">"I was charged twice for the same order"</span>
+      <span class="ticker-arrow">→</span>
+      <span class="ticker-label">disputed_charge</span>
+      <span class="ticker-conf"><b>99.2%</b> · 14ms</span>
+    </div>
+    <div class="ticker-item">
+      <span class="ticker-input">"u]rg3nt!! click h3re 2 claim prize"</span>
+      <span class="ticker-arrow">→</span>
+      <span class="ticker-label">spam</span>
+      <span class="ticker-conf"><b>97.8%</b> · 12ms</span>
+    </div>
+    <div class="ticker-item">
+      <span class="ticker-input">"this absolutely made my whole day"</span>
+      <span class="ticker-arrow">→</span>
+      <span class="ticker-label">joy</span>
+      <span class="ticker-conf"><b>94.1%</b> · 13ms</span>
+    </div>
+    <div class="ticker-item">
+      <span class="ticker-input">"how do I change my card PIN number"</span>
+      <span class="ticker-arrow">→</span>
+      <span class="ticker-label">card_payment</span>
+      <span class="ticker-conf"><b>96.5%</b> · 15ms</span>
+    </div>
+  </div>
+</div>
+
+<div class="posts">
+
+  <a href="confidence-routing/" class="post-card">
+    <div class="post-content">
+      <span class="post-tag tag-guide">Guide</span>
+      <h2 class="post-title">Confidence-Based Routing: When to Trust Your Classifier</h2>
+      <p class="post-desc">How to use confidence scores and prediction margins to build three-tier routing: auto-route, suggest, or escalate</p>
+    </div>
+    <div class="card-icon icon-gauge">
+      <svg viewBox="0 0 40 40" width="40" height="40" fill="none">
+        <path class="arc" d="M8 28 A14 14 0 0 1 32 28" stroke="var(--tag-guide)" stroke-width="2.5" stroke-linecap="round"/>
+        <line class="needle" x1="20" y1="24" x2="20" y2="10" stroke="var(--tag-guide)" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="20" cy="24" r="2.5" fill="var(--tag-guide)"/>
+      </svg>
+    </div>
+  </a>
+
+  <a href="jeffy-vs-llm-classification/" class="post-card">
+    <div class="post-content">
+      <span class="post-tag tag-benchmark">Benchmark</span>
+      <h2 class="post-title">Text Classification: LLM Prompting vs Embeddings + Logistic Regression</h2>
+      <p class="post-desc">Side-by-side comparison of classifying text with an LLM vs frozen embeddings + logistic regression. Same task, both approaches, with code and benchmarks</p>
+    </div>
+    <div class="card-icon icon-bench">
+      <svg viewBox="0 0 40 40" width="40" height="40" fill="none">
+        <rect class="b1" x="6" y="16" width="7" height="18" rx="2" fill="var(--tag-bench)" style="transform-origin:9.5px 34px"/>
+        <rect class="b2" x="16.5" y="10" width="7" height="24" rx="2" fill="var(--tag-bench)" style="transform-origin:20px 34px"/>
+        <rect class="b3" x="27" y="20" width="7" height="14" rx="2" fill="var(--tag-bench)" style="transform-origin:30.5px 34px"/>
+      </svg>
+    </div>
+  </a>
+
+  <a href="when-llms-fail-at-classification/" class="post-card">
+    <div class="post-content">
+      <span class="post-tag tag-benchmark">Benchmark</span>
+      <h2 class="post-title">When LLMs Fail at Classification</h2>
+      <p class="post-desc">Benchmarking 16 models on text classification: LLMs, decision models, and classifiers. On 77-class problems, embedding + logistic regression wins by 14+ points</p>
+    </div>
+    <div class="card-icon icon-bench">
+      <svg viewBox="0 0 40 40" width="40" height="40" fill="none">
+        <rect class="b1" x="6" y="22" width="7" height="12" rx="2" fill="var(--tag-bench)" style="transform-origin:9.5px 34px"/>
+        <rect class="b2" x="16.5" y="8" width="7" height="26" rx="2" fill="var(--tag-bench)" style="transform-origin:20px 34px"/>
+        <rect class="b3" x="27" y="14" width="7" height="20" rx="2" fill="var(--tag-bench)" style="transform-origin:30.5px 34px"/>
+      </svg>
+    </div>
+  </a>
+
+  <a href="n8n-jeffy/" class="post-card">
+    <div class="post-content">
+      <span class="post-tag tag-integration">Integration</span>
+      <h2 class="post-title">Jeffy + n8n: Free Text Classification for Your Workflows</h2>
+      <p class="post-desc">Add deterministic text classification to n8n with Jeffy. Free, self-hosted, 15ms per classification. No LLM, no API key</p>
+    </div>
+    <div class="card-icon icon-flow">
+      <svg viewBox="0 0 40 40" width="40" height="40" fill="none">
+        <line x1="12" y1="20" x2="28" y2="20" stroke="var(--tag-integration)" stroke-width="1.5" opacity="0.3"/>
+        <circle class="node" cx="8" cy="20" r="4" fill="var(--tag-integration)"/>
+        <circle class="node-r" cx="32" cy="20" r="4" fill="var(--tag-integration)"/>
+        <circle class="pulse" cx="8" cy="20" r="2.5" fill="var(--bg)" stroke="var(--tag-integration)" stroke-width="1.5"/>
+      </svg>
+    </div>
+  </a>
+
+  <a href="activepieces-jeffy/" class="post-card">
+    <div class="post-content">
+      <span class="post-tag tag-integration">Integration</span>
+      <h2 class="post-title">Jeffy + Activepieces: Free Text Classification for Your Automations</h2>
+      <p class="post-desc">Add deterministic text classification to Activepieces. Free, self-hosted, 15ms per classification. No LLM, no API key</p>
+    </div>
+    <div class="card-icon icon-flow">
+      <svg viewBox="0 0 40 40" width="40" height="40" fill="none">
+        <line x1="12" y1="20" x2="28" y2="20" stroke="var(--tag-integration)" stroke-width="1.5" opacity="0.3"/>
+        <circle class="node" cx="8" cy="20" r="4" fill="var(--tag-integration)"/>
+        <circle class="node-r" cx="32" cy="20" r="4" fill="var(--tag-integration)"/>
+        <circle class="pulse" cx="8" cy="20" r="2.5" fill="var(--bg)" stroke="var(--tag-integration)" stroke-width="1.5"/>
+      </svg>
+    </div>
+  </a>
+
+  <a href="pacman/" class="post-card">
+    <div class="post-content">
+      <span class="post-tag tag-demo">Demo</span>
+      <h2 class="post-title">How to Beat Pac-Man with a Text Classifier</h2>
+      <p class="post-desc">Regex + weighted scoring beats every LLM on the Jevman Pac-Man benchmark. 8,035 mean score, 3ms per decision, $0</p>
+    </div>
+    <div class="card-icon icon-demo">
+      <svg viewBox="0 0 40 40" width="40" height="40" fill="none">
+        <circle class="d1" cx="12" cy="24" r="3.5" fill="var(--tag-demo)"/>
+        <circle class="d2" cx="22" cy="18" r="2.5" fill="var(--tag-demo)" opacity="0.7"/>
+        <circle class="d3" cx="30" cy="26" r="2" fill="var(--tag-demo)" opacity="0.5"/>
+        <circle cx="18" cy="12" r="1.2" fill="var(--tag-demo)" opacity="0.3"/>
+      </svg>
+    </div>
+  </a>
+
+  <a href="mind-reader/" class="post-card">
+    <div class="post-content">
+      <span class="post-tag tag-demo">Demo</span>
+      <h2 class="post-title">Can AI Read Your Mind?</h2>
+      <p class="post-desc">A real-time pattern detector learns your left/right choices and predicts what you'll pick next. How unpredictable are you?</p>
+    </div>
+    <div class="card-icon icon-demo">
+      <svg viewBox="0 0 40 40" width="40" height="40" fill="none">
+        <circle class="d1" cx="14" cy="22" r="3" fill="var(--tag-demo)"/>
+        <circle class="d2" cx="26" cy="16" r="3.5" fill="var(--tag-demo)" opacity="0.7"/>
+        <circle class="d3" cx="20" cy="28" r="2" fill="var(--tag-demo)" opacity="0.5"/>
+        <circle cx="30" cy="24" r="1.5" fill="var(--tag-demo)" opacity="0.3"/>
+      </svg>
+    </div>
+  </a>
+
+</div>
+
+<footer>
+  <a href="https://jeffyclassify.com">Jeffy</a>
+  <a href="https://playground.jeffyclassify.com">Playground</a>
+  <a href="https://github.com/nicobrenner/jeffy">GitHub</a>
+  <span style="color:var(--fg-muted)">pip install jeffy-classify</span>
+</footer>
+
+</body>
+</html>
