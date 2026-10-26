@@ -164,6 +164,17 @@ h2 { font-family: var(--fm); font-size: 1.05rem; font-weight: 600; color: var(--
 footer { border-top: 1px solid var(--brd); padding: 20px 0 44px; font-size: 0.78rem; color: var(--fg-m); text-align: center; }
 footer a { color: var(--accent); text-decoration: none; }
 footer a:hover { text-decoration: underline; }
+
+/* Chart.js with maintainAspectRatio:false needs the container to have a height */
+.scatter-box { height: 460px; max-height: 460px; }
+@media (max-width: 560px) { .scatter-box { height: 380px; max-height: 380px; } }
+.scatter-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.scatter-tabs button {
+  background: var(--bg-r); border: 1px solid var(--brd); color: var(--fg-m);
+  font-family: var(--fm); font-size: 0.75rem; padding: 6px 12px;
+  border-radius: 6px; cursor: pointer;
+}
+.scatter-tabs button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
 </style>
 
 <div class="hero">
@@ -181,6 +192,23 @@ footer a:hover { text-decoration: underline; }
     <div><div class="v">15</div><div class="l">Competitors tested</div></div>
   </div>
 </div>
+
+<section>
+  <h2>Accuracy vs. speed</h2>
+  <p class="sdesc">Every model on two axes at once. Up is more accurate, left is faster, so the
+    top-left corner is where you want to be. Latency is a log scale, because the spread runs
+    from a tenth of a millisecond to seventeen seconds.</p>
+  <div class="card">
+    <div class="scatter-tabs" id="sc-tabs"></div>
+    <div class="chart-box scatter-box"><canvas id="ch-scatter"></canvas></div>
+  </div>
+  <div class="callout">
+    <b>Read the corners.</b> FastText and SetFit sit far left and low: fast and wrong.
+    The big LLMs sit far right: slow, and on 77 classes not even accurate.
+    Jev is the only thing close to Jeffy on both axes, and it is a hosted API, so
+    your text leaves your machine and you pay per call.
+  </div>
+</section>
 
 <section>
   <h2>Accuracy vs. number of classes</h2>
@@ -806,6 +834,114 @@ suiteData.forEach(function(r) {
   tr.innerHTML = '<td style="font-family:var(--fm);font-weight:500">'+r.t+'</td><td>'+r.n+'</td><td style="color:var(--accent);font-weight:600">'+(r.acc).toFixed(1)+'%</td><td>'+r.lat+'ms</td>';
   suiteEl.appendChild(tr);
 });
+
+// --- Accuracy vs speed scatter -------------------------------------------
+// Reads the same MODELS and TASKS the other charts use, so it cannot drift.
+var SC_TASK_LABEL = { banking77: "banking77 (77 classes)", ag_news: "ag_news (4)", sst2: "sst2 (2)" };
+var scChart = null, scTask = "banking77";
+
+// This page has both themes, so take colours from the CSS custom properties
+// rather than hardcoding one palette.
+function scCss(name, fallback) {
+  var v = getComputedStyle(document.documentElement).getPropertyValue(name);
+  return (v && v.trim()) || fallback;
+}
+
+var scatterLabels = {
+  id: "scatterLabels",
+  afterDatasetsDraw: function(chart) {
+    var ctx = chart.ctx, meta = chart.getDatasetMeta(0);
+    var pts = chart.data.datasets[0].data;
+    var area = chart.chartArea;
+    var dim = scCss("--fg-m", "#5e6a7e"), accent = scCss("--accent", "#20d49a");
+    ctx.save();
+    ctx.textBaseline = "middle";
+    meta.data.forEach(function(el, i) {
+      var p = pts[i];
+      if (!p) return;
+      var right = el.x < area.left + (area.right - area.left) * 0.68;
+      ctx.fillStyle = p.isJeffy ? accent : dim;
+      ctx.font = (p.isJeffy ? "bold 12px " : "11px ") + "ui-monospace, Menlo, monospace";
+      ctx.textAlign = right ? "left" : "right";
+      ctx.fillText(p.name, el.x + (right ? 11 : -11), el.y);
+    });
+    ctx.restore();
+  }
+};
+
+function drawScatter(taskId) {
+  scTask = taskId;
+  var task = TASKS[taskId];
+  var dim = scCss("--fg-m", "#5e6a7e"), grid = scCss("--brd", "#1c2330");
+  var ring = scCss("--bg-s", "#111620");
+  var pts = task.results.map(function(r) {
+    var info = modelInfo(r.id) || { name: r.id, color: "#707580" };
+    return { x: Math.max(r.lat, 0.1), y: r.acc * 100, name: info.name,
+             color: info.color, isJeffy: r.id === "jeffy", lat: r.lat };
+  });
+  var cfg = {
+    type: "scatter",
+    data: { datasets: [{
+      data: pts,
+      pointRadius: function(c) { return c.raw && c.raw.isJeffy ? 9 : 6; },
+      pointHoverRadius: function(c) { return c.raw && c.raw.isJeffy ? 12 : 9; },
+      backgroundColor: function(c) { return c.raw ? c.raw.color : "#707580"; },
+      borderColor: function(c) { return c.raw && c.raw.isJeffy ? ring : "transparent"; },
+      borderWidth: function(c) { return c.raw && c.raw.isJeffy ? 3 : 0; }
+    }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      layout: { padding: { right: 30, left: 6, top: 12, bottom: 4 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: function(c) {
+          return c.raw.name + ": " + c.raw.y.toFixed(1) + "% accuracy, " + fmtLat(c.raw.lat);
+        } } }
+      },
+      scales: {
+        // Explicit bounds: Chart.js auto-ranges a log axis to the first point
+        // and drops the rest, which hid 14 of 16 models.
+        x: { type: "logarithmic", min: 0.05, max: 40000,
+             title: { display: true, text: "p50 latency per prediction, log scale (left is faster)", color: dim },
+             ticks: { color: dim, autoSkip: false, maxRotation: 0, callback: function(v) {
+               return [0.1, 1, 10, 100, 1000, 10000].indexOf(v) >= 0 ? fmtLat(v) : "";
+             } },
+             grid: { color: grid } },
+        y: { min: 0, max: 100,
+             title: { display: true, text: "accuracy (%) (up is better)", color: dim },
+             ticks: { color: dim, stepSize: 20, callback: function(v) { return v + "%"; } },
+             grid: { color: grid } }
+      }
+    },
+    plugins: [scatterLabels]
+  };
+  if (scChart) scChart.destroy();
+  scChart = new Chart(document.getElementById("ch-scatter"), cfg);
+}
+
+(function initScatter() {
+  var tabs = document.getElementById("sc-tabs");
+  if (!tabs) return;
+  ["banking77", "ag_news", "sst2"].forEach(function(id) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.textContent = SC_TASK_LABEL[id] || id;
+    b.setAttribute("aria-pressed", id === "banking77" ? "true" : "false");
+    b.addEventListener("click", function() {
+      Array.prototype.forEach.call(tabs.children, function(c) { c.setAttribute("aria-pressed", "false"); });
+      b.setAttribute("aria-pressed", "true");
+      drawScatter(id);
+    });
+    tabs.appendChild(b);
+  });
+  drawScatter("banking77");
+  // Repaint on theme change so the axis and labels stay legible.
+  if (window.matchMedia) {
+    var mq = window.matchMedia("(prefers-color-scheme: dark)");
+    if (mq.addEventListener) mq.addEventListener("change", function() { drawScatter(scTask); });
+  }
+})();
+
 </script>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-BXL0V8163H"></script>

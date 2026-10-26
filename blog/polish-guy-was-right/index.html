@@ -550,9 +550,22 @@ footer a:hover { color: var(--accent); }
   .demo-input-row { flex-direction: column; }
   .demo-btn { width: 100%; }
 }
+
+/* Live flock behind the text. Sits under everything, never takes clicks, and
+   stays dim enough that body copy keeps its contrast. */
+#flock {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.45;
+}
+body > h1, body > h2, body > p, body > table, body > div, body > footer { position: relative; }
 </style>
 </head>
 <body>
+
+<canvas id="flock" aria-hidden="true"></canvas>
 
 <h1>The Polish guy was right</h1>
 <p class="dateline">Oct 2026 &middot; Multilingual &middot; Nico Brenner</p>
@@ -749,6 +762,190 @@ fetch("https://api.github.com/repos/nicobrenner/jeffy")
 </script>
 <script defer src="https://stats.jeffyclassify.com/script.js" data-website-id="f9036a1c-0cc2-4e1d-ac25-2eb9e5dfc530" data-hash="true" data-do-not-track="false"></script>
 <script defer src="https://stats.jeffyclassify.com/recorder.js" data-website-id="f9036a1c-0cc2-4e1d-ac25-2eb9e5dfc530"></script>
+
+<script>
+// --- Live flock background ------------------------------------------------
+// Boids drift behind the text, then gather into a Polish word and disperse.
+// The flock is the argument: lots of tiny agents, none of them clever, together
+// producing language. White and red because of the flag. "brak" is in the list
+// because "none" is what every tool returned for that commenter's Polish.
+(function () {
+  var canvas = document.getElementById("flock");
+  if (!canvas || !canvas.getContext) return;
+  var ctx = canvas.getContext("2d");
+  var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  var WORDS = ["cześć", "brak", "dziękuję", "język"];
+  var N = 520;
+  var WHITE = "244,244,242";
+  var RED = "220,20,60";
+
+  var w = 0, h = 0, dpr = 1;
+  var boids = [];
+  var targets = null;      // array of {x,y} while gathering, else null
+  var phase = "free";      // free | gather | hold | release
+  var phaseAt = 0;
+  var wordIndex = -1;
+  var running = true;
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    w = window.innerWidth;
+    h = window.innerHeight;
+    canvas.width = Math.floor(w * dpr);
+    canvas.height = Math.floor(h * dpr);
+    canvas.style.width = w + "px";
+    canvas.style.height = h + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (phase !== "free") { targets = null; phase = "free"; phaseAt = performance.now(); }
+  }
+
+  function init() {
+    boids = [];
+    for (var i = 0; i < N; i++) {
+      boids.push({
+        x: Math.random() * w, y: Math.random() * h,
+        vx: (Math.random() - 0.5) * 1.2, vy: (Math.random() - 0.5) * 1.2,
+        c: Math.random() < 0.28 ? RED : WHITE,
+        r: 0.9 + Math.random() * 1.3,
+        tx: 0, ty: 0
+      });
+    }
+  }
+
+  // Render a word offscreen and sample the pixels it covers, so the flock has
+  // somewhere to go.
+  function wordPoints(word, count) {
+    var size = Math.min(w * 0.11, h * 0.19, 118);
+    var off = document.createElement("canvas");
+    var pad = 40;
+    var octx = off.getContext("2d");
+    octx.font = "700 " + size + "px 'IBM Plex Mono', ui-monospace, monospace";
+    var metrics = octx.measureText(word);
+    off.width = Math.ceil(metrics.width) + pad * 2;
+    off.height = Math.ceil(size * 1.6) + pad * 2;
+    octx = off.getContext("2d");
+    octx.font = "700 " + size + "px 'IBM Plex Mono', ui-monospace, monospace";
+    octx.fillStyle = "#fff";
+    octx.textBaseline = "middle";
+    octx.fillText(word, pad, off.height / 2);
+
+    var data = octx.getImageData(0, 0, off.width, off.height).data;
+    var hits = [];
+    var step = 1;
+    for (var y = 0; y < off.height; y += step) {
+      for (var x = 0; x < off.width; x += step) {
+        if (data[(y * off.width + x) * 4 + 3] > 140) hits.push([x, y]);
+      }
+    }
+    if (!hits.length) return null;
+    // shuffle, then take `count`, repeating if the glyphs are sparse
+    for (var i = hits.length - 1; i > 0; i--) {
+      var j = (Math.random() * (i + 1)) | 0, t = hits[i]; hits[i] = hits[j]; hits[j] = t;
+    }
+    var ox = (w - off.width) / 2, oy = (h - off.height) / 2;
+    var pts = [];
+    for (var k = 0; k < count; k++) {
+      var p = hits[k % hits.length];
+      pts.push({ x: ox + p[0] + (Math.random() - 0.5) * 2, y: oy + p[1] + (Math.random() - 0.5) * 2 });
+    }
+    return pts;
+  }
+
+  function flockStep(b) {
+    var sepX = 0, sepY = 0, aliX = 0, aliY = 0, cohX = 0, cohY = 0, n = 0;
+    for (var i = 0; i < boids.length; i += 2) {   // sample half the flock, it looks the same and costs half
+      var o = boids[i];
+      if (o === b) continue;
+      var dx = o.x - b.x, dy = o.y - b.y;
+      var d2 = dx * dx + dy * dy;
+      if (d2 > 9000 || d2 === 0) continue;
+      n++;
+      cohX += o.x; cohY += o.y;
+      aliX += o.vx; aliY += o.vy;
+      if (d2 < 520) { sepX -= dx / d2 * 18; sepY -= dy / d2 * 18; }
+    }
+    if (n) {
+      b.vx += ((cohX / n) - b.x) * 0.0006 + ((aliX / n) - b.vx) * 0.02 + sepX * 0.02;
+      b.vy += ((cohY / n) - b.y) * 0.0006 + ((aliY / n) - b.vy) * 0.02 + sepY * 0.02;
+    }
+    // drift back toward the middle instead of wrapping, which looks less mechanical
+    b.vx += (w / 2 - b.x) * 0.00012;
+    b.vy += (h / 2 - b.y) * 0.00012;
+  }
+
+  function tick(now) {
+    if (!running) return;
+    requestAnimationFrame(tick);
+
+    var elapsed = now - phaseAt;
+    if (phase === "free" && elapsed > 7000) {
+      wordIndex = (wordIndex + 1) % WORDS.length;
+      targets = wordPoints(WORDS[wordIndex], boids.length);
+      if (targets) {
+        for (var i = 0; i < boids.length; i++) { boids[i].tx = targets[i].x; boids[i].ty = targets[i].y; }
+        phase = "gather"; phaseAt = now;
+      } else { phaseAt = now; }
+    } else if (phase === "gather" && elapsed > 2600) { phase = "hold"; phaseAt = now; }
+    else if (phase === "hold" && elapsed > 2800) { phase = "release"; phaseAt = now; }
+    else if (phase === "release" && elapsed > 1200) { phase = "free"; targets = null; phaseAt = now; }
+
+    window.__flockPhase = phase;
+    ctx.clearRect(0, 0, w, h);
+    var seeking = phase === "gather" || phase === "hold";
+
+    for (var b, k = 0; k < boids.length; k++) {
+      b = boids[k];
+      if (seeking) {
+        var pull = phase === "hold" ? 0.075 : 0.035;
+        b.vx += (b.tx - b.x) * pull;
+        b.vy += (b.ty - b.y) * pull;
+        b.vx *= 0.82; b.vy *= 0.82;
+      } else {
+        flockStep(b);
+        var sp = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
+        if (sp > 1.5) { b.vx = b.vx / sp * 1.5; b.vy = b.vy / sp * 1.5; }
+        if (sp < 0.25) { b.vx += (Math.random() - 0.5) * 0.3; b.vy += (Math.random() - 0.5) * 0.3; }
+      }
+      b.x += b.vx; b.y += b.vy;
+      if (b.x < -30) b.x = w + 30; if (b.x > w + 30) b.x = -30;
+      if (b.y < -30) b.y = h + 30; if (b.y > h + 30) b.y = -30;
+
+      var a = phase === "hold" ? 0.95 : (seeking ? 0.8 : 0.34);
+      ctx.fillStyle = "rgba(" + b.c + "," + a + ")";
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, phase === "hold" ? b.r * 2.3 : b.r, 0, 6.283);
+      ctx.fill();
+    }
+  }
+
+  function start() {
+    resize();
+    init();
+    if (reduced) {
+      // One static frame: the flock exists, it just does not move.
+      ctx.clearRect(0, 0, w, h);
+      for (var i = 0; i < boids.length; i++) {
+        var b = boids[i];
+        ctx.fillStyle = "rgba(" + b.c + ",0.35)";
+        ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, 6.283); ctx.fill();
+      }
+      return;
+    }
+    phaseAt = performance.now();
+    requestAnimationFrame(tick);
+  }
+
+  window.addEventListener("resize", resize);
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) { running = false; }
+    else if (!reduced && !running) { running = true; phaseAt = performance.now(); requestAnimationFrame(tick); }
+  });
+
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(start);
+  else start();
+})();
+</script>
 
 </body>
 </html>
