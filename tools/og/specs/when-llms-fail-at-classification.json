@@ -1,0 +1,20 @@
+{
+  "out": "blog/when-llms-fail-at-classification/og-v2.png",
+  "title": ["When LLMs Fail", "at Classification"],
+  "subtitle": "JeffyBench: 16 models, 3 tasks, 77 classes",
+  "kpis": [
+    {"value": "94.3%", "caption": "Jeffy, 77 classes, 118ms"},
+    {"value": "68.0%", "caption": "best LLM, 77 classes, 15.4s", "color": "rose"}
+  ],
+  "bars": [
+    {"label": "Jeffy",    "value": 0.943, "display": "94%"},
+    {"label": "FastText", "value": 0.859, "display": "86%", "color": "yellow"},
+    {"label": "SetFit",   "value": 0.850, "display": "85%", "color": "pink"},
+    {"label": "Jev",      "value": 0.800, "display": "80%", "color": "orange"},
+    {"label": "phi4",     "value": 0.680, "display": "68%", "color": "purple"},
+    {"label": "GLiNER",   "value": 0.560, "display": "56%", "color": "blue"},
+    {"label": "Laya",     "value": 0.380, "display": "38%", "color": "rose"}
+  ],
+  "bar_note": "banking77, 77 classes. Classifier rows are benchmark v2",
+  "footer_right": "embedding + logistic regression"
+}

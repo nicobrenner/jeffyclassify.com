@@ -175,6 +175,11 @@ footer a:hover { text-decoration: underline; }
   border-radius: 6px; cursor: pointer;
 }
 .scatter-tabs button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.correction { background: var(--bg-r); border-left: 3px solid var(--phi); padding: 16px 18px; border-radius: 0 8px 8px 0; margin: 24px 0 8px; font-size: 0.88rem; line-height: 1.6; }
+.correction h3 { margin: 0 0 8px; font-size: 0.95rem; color: var(--phi); font-weight: 600; }
+.correction ul { margin: 8px 0 8px 18px; padding: 0; }
+.correction li { margin: 4px 0; }
+.correction a { color: var(--phi); }
 </style>
 
 <div class="hero">
@@ -187,10 +192,35 @@ footer a:hover { text-decoration: underline; }
   </p>
   <div class="kpi">
     <div><div class="v">94.3%</div><div class="l">Jeffy on 77 classes</div></div>
-    <div><div class="v" style="color:var(--phi)">80%</div><div class="l">Best competitor (77 cls)</div></div>
+    <div><div class="v" style="color:var(--phi)">85.9%</div><div class="l">Best competitor (77 cls)</div></div>
     <div><div class="v">130x</div><div class="l">Faster (banking77)</div></div>
     <div><div class="v">15</div><div class="l">Competitors tested</div></div>
   </div>
+</div>
+
+<div class="correction">
+  <h3>Correction, 26 Oct 2026: we re-ran our own baselines and they were too weak</h3>
+  <p style="margin:0 0 8px">
+    The SetFit and FastText numbers published here on 11 Oct did not reproduce. They were
+    misconfigured in our favour, and the corrected numbers are much stronger:
+  </p>
+  <ul>
+    <li><b>FastText</b> was run on library defaults (lr 0.1, 5 epochs) on a 77-class problem.
+      It scored 1.1%, below the 1.3% chance rate. Tuned, it gets <b>85.9%</b> on banking77</li>
+    <li><b>SetFit</b> was run with an unidentified smaller model. With the documented
+      <code>paraphrase-mpnet-base-v2</code> at 20 shots per class it gets <b>85.0%</b></li>
+    <li><b>qwen3-32B at 3%</b> is withdrawn, not corrected. It scores below a 0.5B model on
+      all three tasks, which is a parsing failure rather than a capability</li>
+    <li><b>Jeffy's own numbers are unchanged</b> and reproduce exactly</li>
+  </ul>
+  <p style="margin:8px 0 0">
+    So the lead on banking77 is <b>8.4 points, not 40</b>. The charts below use the corrected
+    numbers. The cause was publishing results with no runner script, so for two weeks nobody
+    could re-run them, including us. Full detail and the rules adopted since:
+    <a href="https://github.com/nicobrenner/jeffy/blob/main/benchmarks/CHANGELOG.md">benchmarks/CHANGELOG.md</a>
+    &middot; <a href="https://github.com/nicobrenner/jeffy/blob/main/benchmarks/classifier_baselines.py">the runner</a>
+    &middot; <a href="https://github.com/nicobrenner/jeffy/blob/main/data/eval_results/setfit_fasttext_benchmark_rerun.json">the results file</a>
+  </p>
 </div>
 
 <section>
@@ -203,10 +233,12 @@ footer a:hover { text-decoration: underline; }
     <div class="chart-box scatter-box"><canvas id="ch-scatter"></canvas></div>
   </div>
   <div class="callout">
-    <b>Read the corners.</b> FastText and SetFit sit far left and low: fast and wrong.
-    The big LLMs sit far right: slow, and on 77 classes not even accurate.
-    Jev is the only thing close to Jeffy on both axes, and it is a hosted API, so
-    your text leaves your machine and you pay per call.
+    <b>Read the corners.</b> The big LLMs sit far right: slow, and on 77 classes not even
+    accurate. FastText is the fastest thing here by two orders of magnitude and, tuned, it is
+    genuinely competitive on accuracy, but it ships an 800&nbsp;MB model for one task.
+    Jeffy and SetFit sit upper-left, and Jeffy serves all 70 heads from one shared encoder.
+    Jev is close on both axes and is a hosted API, so your text leaves your machine and you
+    pay per call.
   </div>
 </section>
 
@@ -219,10 +251,11 @@ footer a:hover { text-decoration: underline; }
     <div class="legend" id="lg-acc"></div>
   </div>
   <div class="callout">
-    <b>The crossover:</b> Between 2 and 4 classes, Jeffy overtakes all 15 competitors.
-    By 77 classes, even Jev — the leading hosted decision model — scores 80% vs Jeffy's 94%.
-    Open-source decision models fare worse: GLiNER 56%, Laya 38%.
-    SetFit drops to 54%. FastText barely registers at 1%.
+    <b>The crossover:</b> Between 2 and 4 classes, Jeffy overtakes every LLM and decision
+    model tested. By 77 classes, even Jev, the leading hosted decision model, scores 80% vs
+    Jeffy's 94.3%. Open-source decision models fare worse: GLiNER 56%, Laya 38%.
+    The two trained classifiers hold up far better than the rest: tuned FastText 85.9% and
+    SetFit 85.0%, which is an 8.4 point gap rather than a collapse.
   </div>
 </section>
 
@@ -244,7 +277,10 @@ footer a:hover { text-decoration: underline; }
   <h2>Full results by task</h2>
   <p class="sdesc">16 models: Jeffy, 10 LLMs (0.5B–32B via Ollama), 3 decision models (Jev, Laya, GLiNER2.5), SetFit, and FastText. 3 tasks, 100 samples each.
     LLMs prompted zero-shot at temperature 0. Jev via hosted API.
-    Decision models given the label set at call time. SetFit and FastText trained on the same data as Jeffy.</p>
+    Decision models given the label set at call time.
+    FastText trained on the same split as Jeffy; SetFit on 20 examples per class, because its
+    contrastive stage is quadratic in training-set size.
+    Classifier baselines are <b>benchmark v2</b> (2026-10-26); LLM and decision-model rows are v1.</p>
   <div class="tgrid" id="tables"></div>
 </section>
 
@@ -339,8 +375,8 @@ var TASKS = {
       { id: "phi_2.7b", acc: 0.30, lat: 231 },
       { id: "qwen2.5_0.5b", acc: 0.15, lat: 55 },
       { id: "qwen3_32b", acc: 0.03, lat: 9500 },
-      { id: "setfit", acc: 0.5425, lat: 6 },
-      { id: "fasttext", acc: 0.011, lat: 0.1 },
+      { id: "setfit", acc: 0.8497, lat: 46 },
+      { id: "fasttext", acc: 0.8588, lat: 0.01 },
       { id: "laya", acc: 0.38, lat: 815 },
       { id: "gliner", acc: 0.56, lat: 1672 },
       { id: "jev", acc: 0.80, lat: 134 }
@@ -360,8 +396,8 @@ var TASKS = {
       { id: "phi_2.7b", acc: 0.64, lat: 229 },
       { id: "qwen2.5_0.5b", acc: 0.57, lat: 50 },
       { id: "qwen3_32b", acc: 0.21, lat: 9900 },
-      { id: "setfit", acc: 0.859, lat: 9 },
-      { id: "fasttext", acc: 0.372, lat: 0.1 },
+      { id: "setfit", acc: 0.8679, lat: 41 },
+      { id: "fasttext", acc: 0.9170, lat: 0.01 },
       { id: "laya", acc: 0.94, lat: 273 },
       { id: "gliner", acc: 0.65, lat: 366 },
       { id: "jev", acc: 0.83, lat: 127 }
@@ -381,8 +417,8 @@ var TASKS = {
       { id: "phi4mini_3.8b", acc: 0.79, lat: 138 },
       { id: "qwen3_32b", acc: 0.59, lat: 16700 },
       { id: "qwen2.5_0.5b", acc: 0.50, lat: 51 },
-      { id: "setfit", acc: 0.8142, lat: 7 },
-      { id: "fasttext", acc: 0.5734, lat: 0.1 },
+      { id: "setfit", acc: 0.8716, lat: 36 },
+      { id: "fasttext", acc: 0.8200, lat: 0.01 },
       { id: "laya", acc: 0.83, lat: 220 },
       { id: "gliner", acc: 0.93, lat: 336 },
       { id: "jev", acc: 0.96, lat: 127 }
@@ -901,7 +937,7 @@ function drawScatter(taskId) {
       scales: {
         // Explicit bounds: Chart.js auto-ranges a log axis to the first point
         // and drops the rest, which hid 14 of 16 models.
-        x: { type: "logarithmic", min: 0.05, max: 40000,
+        x: { type: "logarithmic", min: 0.005, max: 40000,
              title: { display: true, text: "p50 latency per prediction, log scale (left is faster)", color: dim },
              ticks: { color: dim, autoSkip: false, maxRotation: 0, callback: function(v) {
                return [0.1, 1, 10, 100, 1000, 10000].indexOf(v) >= 0 ? fmtLat(v) : "";

@@ -125,8 +125,10 @@ def draw_bars(draw, bars, x, y, w, accent, note=None, rng=None):
     value_w = max(text_w(draw, b.get("display", ""), vf) for b in bars) + 12
     track_x = x + label_w
     track_w = w - label_w - value_w
-    row_h = 42
-    bar_h = 15
+    # Tighten the rows as the list grows, so seven bars plus a note still clear
+    # the footer rule instead of printing over it.
+    row_h = 42 if len(bars) <= 5 else (38 if len(bars) == 6 else 34)
+    bar_h = 15 if len(bars) <= 6 else 13
 
     for i, b in enumerate(bars):
         cy = y + i * row_h + row_h // 2
@@ -155,9 +157,11 @@ def draw_bars(draw, bars, x, y, w, accent, note=None, rng=None):
 
     end = y + len(bars) * row_h
     if note:
-        nf = fit(draw, note, "Regular", 15, w)
-        draw.text((track_x, end + 6), note, font=nf, fill=PALETTE["dim"])
-        end += 26
+        # Anchored to the column's left edge and bounded by its full width;
+        # anchoring at track_x let a long note run off the card.
+        nf = fit(draw, note, "Regular", 15, w, min_size=10)
+        draw.text((x, end + 6), note, font=nf, fill=PALETTE["dim"])
+        end += 24
     return end
 
 

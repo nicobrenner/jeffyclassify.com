@@ -9,14 +9,14 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta property="og:title" content="When LLMs Fail at Classification">
 <meta property="og:description" content="16 models benchmarked. On 77-class problems, Jeffy (embedding + LR) gets 94.3% while the best LLM gets 68%. Not close.">
-<meta property="og:image" content="https://jeffyclassify.com/blog/when-llms-fail-at-classification/og.png">
+<meta property="og:image" content="https://jeffyclassify.com/blog/when-llms-fail-at-classification/og-v2.png">
 <meta property="og:url" content="https://jeffyclassify.com/blog/when-llms-fail-at-classification/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="Jeffy">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="When LLMs Fail at Classification">
 <meta name="twitter:description" content="16 models benchmarked. On 77 classes, embedding + LR gets 94.3% vs best LLM at 68%.">
-<meta name="twitter:image" content="https://jeffyclassify.com/blog/when-llms-fail-at-classification/og.png">
+<meta name="twitter:image" content="https://jeffyclassify.com/blog/when-llms-fail-at-classification/og-v2.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
@@ -270,12 +270,35 @@ footer a:hover { color: var(--accent); }
   .stat-row { grid-template-columns: repeat(2, 1fr); }
   h1 { font-size: 1.3rem; }
 }
+.correction {
+  background: rgba(255,170,60,0.06);
+  border-left: 3px solid #e0a040;
+  padding: 14px 18px;
+  border-radius: 0 8px 8px 0;
+  margin: 22px 0 28px;
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+.correction b { color: #e0a040; }
+.correction a { color: #e0a040; }
 </style>
 </head>
 <body>
 
 <h1>When LLMs fail at classification</h1>
 <div class="dateline">Oct 2026 · Benchmark · Nico Brenner</div>
+
+<div class="correction">
+  <b>Correction, 26 Oct 2026.</b> The SetFit and FastText numbers in the original version of
+  this post were misconfigured, in our favour. FastText had been run on library defaults
+  (lr 0.1, 5 epochs) on a 77-class problem and scored 1.1%, below the 1.3% chance rate; tuned
+  it gets 85.9%. SetFit had been run with an unidentified smaller model; with the documented
+  base at 20 shots per class it gets 85.0%. The qwen3-32B row is withdrawn rather than
+  corrected. Jeffy's own numbers are unchanged. The charts and text below now use the
+  corrected figures, so the gap on banking77 is 8.4 points rather than 40, and the argument of
+  the post is about LLMs and decision models rather than about trained classifiers.
+  <a href="https://github.com/nicobrenner/jeffy/blob/main/benchmarks/CHANGELOG.md">What went wrong and what changed</a>
+</div>
 
 <p>
   I built <a href="https://github.com/nicobrenner/jeffy">Jeffy</a>, an open-source text classifier that uses BGE-large embeddings + logistic regression. I wanted to know how it actually compares to LLMs, decision models, and other classifiers
@@ -328,7 +351,7 @@ footer a:hover { color: var(--accent); }
 </div>
 
 <p>
-  SetFit (6ms) and FastText (&lt;1ms) are faster, but they trade too much accuracy for it. At 77 classes SetFit drops to 54% and FastText to 1%. Jev is the closest on both speed and accuracy (134ms, 80%), but it's a hosted API: your data leaves your machine and you pay per call. Jeffy runs entirely on your CPU
+  SetFit (46ms) and FastText (&lt;1ms) are the real competition here, and at 77 classes they land at 85.0% and 85.9% against Jeffy's 94.3%. FastText is the fastest thing in the benchmark by two orders of magnitude, and it ships an 800&nbsp;MB model to do one task. Jev is closest on both speed and accuracy (134ms, 80%), but it's a hosted API: your data leaves your machine and you pay per call. Jeffy runs entirely on your CPU
 </p>
 
 <h2>The setup</h2>
@@ -340,7 +363,7 @@ footer a:hover { color: var(--accent); }
   <li><strong>sst2</strong> - binary sentiment (2 classes). The easy one</li>
 </ul>
 <p>
-  100 held-out samples per task. All LLMs via Ollama on the same machine, temperature 0, prompted with "reply with ONLY the category name." Decision models get the label set at call time. Jeffy, SetFit, and FastText trained on standard training splits
+  100 held-out samples per task. All LLMs via Ollama on the same machine, temperature 0, prompted with "reply with ONLY the category name." Decision models get the label set at call time. Jeffy and FastText trained on standard training splits; SetFit on 20 examples per class, because its contrastive stage is quadratic in training-set size. Classifier numbers are benchmark v2, measured on the full evaluation splits
 </p>
 
 <h2>Full results by task</h2>
@@ -432,7 +455,7 @@ var TASKS = {
     { id: "gemma3_4b", acc: 0.64, lat: 956 },
     { id: "llama3.1_8b", acc: 0.62, lat: 8900 },
     { id: "gliner", acc: 0.56, lat: 1672 },
-    { id: "setfit", acc: 0.5425, lat: 6 },
+    { id: "setfit", acc: 0.8497, lat: 46 },
     { id: "phi4mini_3.8b", acc: 0.52, lat: 181 },
     { id: "llama3.2_3b", acc: 0.46, lat: 143 },
     { id: "mistral_7b", acc: 0.39, lat: 17000 },
@@ -440,12 +463,12 @@ var TASKS = {
     { id: "phi_2.7b", acc: 0.30, lat: 231 },
     { id: "qwen2.5_0.5b", acc: 0.15, lat: 55 },
     { id: "qwen3_32b", acc: 0.03, lat: 9500 },
-    { id: "fasttext", acc: 0.011, lat: 0.1 }
+    { id: "fasttext", acc: 0.8588, lat: 0.01 }
   ]},
   ag_news: { n: 4, cat: "topic", results: [
     { id: "laya", acc: 0.94, lat: 273 },
     { id: "jeffy", acc: 0.905, lat: 80 },
-    { id: "setfit", acc: 0.859, lat: 9 },
+    { id: "setfit", acc: 0.8679, lat: 41 },
     { id: "phi4_14b", acc: 0.83, lat: 493 },
     { id: "jev", acc: 0.83, lat: 127 },
     { id: "gemma4_9.6b", acc: 0.82, lat: 969 },
@@ -457,7 +480,7 @@ var TASKS = {
     { id: "gliner", acc: 0.65, lat: 366 },
     { id: "phi_2.7b", acc: 0.64, lat: 229 },
     { id: "qwen2.5_0.5b", acc: 0.57, lat: 50 },
-    { id: "fasttext", acc: 0.372, lat: 0.1 },
+    { id: "fasttext", acc: 0.9170, lat: 0.01 },
     { id: "qwen3_32b", acc: 0.21, lat: 9900 }
   ]},
   sst2: { n: 2, cat: "sentiment", results: [
@@ -471,11 +494,11 @@ var TASKS = {
     { id: "mistral_7b", acc: 0.86, lat: 8400 },
     { id: "laya", acc: 0.83, lat: 220 },
     { id: "phi_2.7b", acc: 0.83, lat: 255 },
-    { id: "setfit", acc: 0.8142, lat: 7 },
+    { id: "setfit", acc: 0.8716, lat: 36 },
     { id: "gemma4_9.6b", acc: 0.79, lat: 623 },
     { id: "phi4mini_3.8b", acc: 0.79, lat: 138 },
     { id: "qwen3_32b", acc: 0.59, lat: 16700 },
-    { id: "fasttext", acc: 0.5734, lat: 0.1 },
+    { id: "fasttext", acc: 0.8200, lat: 0.01 },
     { id: "qwen2.5_0.5b", acc: 0.50, lat: 51 }
   ]}
 };
