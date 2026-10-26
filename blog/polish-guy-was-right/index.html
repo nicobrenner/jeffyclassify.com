@@ -796,6 +796,9 @@ fetch("https://api.github.com/repos/nicobrenner/jeffy")
   var phaseAt = 0;
   var wordIndex = -1;
   var running = true;
+  // Pointer interaction. The canvas takes no pointer events, so listen on the
+  // window and let the flock react to where the reader actually is.
+  var ptr = { x: -9999, y: -9999, down: false, downAt: 0, active: false };
 
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -881,6 +884,25 @@ fetch("https://api.github.com/repos/nicobrenner/jeffy")
     // drift back toward the middle instead of wrapping, which looks less mechanical
     b.vx += (w / 2 - b.x) * 0.00012;
     b.vy += (h / 2 - b.y) * 0.00012;
+
+    if (ptr.active) {
+      var pdx = b.x - ptr.x, pdy = b.y - ptr.y;
+      var pd2 = pdx * pdx + pdy * pdy;
+      if (ptr.down) {
+        // held: a weak attractor, so the flock gathers toward the finger
+        if (pd2 > 400 && pd2 < 360000) {
+          var pd = Math.sqrt(pd2);
+          b.vx -= pdx / pd * 0.16;
+          b.vy -= pdy / pd * 0.16;
+        }
+      } else if (pd2 < 8100 && pd2 > 1) {
+        // near the cursor: steer away, strongest closest in
+        var f = (8100 - pd2) / 8100 * 1.5;
+        var d = Math.sqrt(pd2);
+        b.vx += pdx / d * f;
+        b.vy += pdy / d * f;
+      }
+    }
   }
 
   function tick(now) {
@@ -966,6 +988,27 @@ fetch("https://api.github.com/repos/nicobrenner/jeffy")
     phaseAt = performance.now();
     requestAnimationFrame(tick);
   }
+
+  function setPtr(e) {
+    var t = e.touches && e.touches[0] ? e.touches[0] : e;
+    ptr.x = t.clientX; ptr.y = t.clientY; ptr.active = true;
+  }
+  window.addEventListener("mousemove", setPtr, { passive: true });
+  window.addEventListener("touchmove", setPtr, { passive: true });
+  window.addEventListener("mouseleave", function () { ptr.active = false; });
+  window.addEventListener("pointerdown", function (e) {
+    setPtr(e); ptr.down = true; ptr.downAt = performance.now();
+  }, { passive: true });
+  window.addEventListener("pointerup", function (e) {
+    ptr.down = false;
+    // A short press is a tap: summon the next word now instead of waiting out
+    // the cycle. A long press was the attractor, so do not also summon.
+    var quick = performance.now() - ptr.downAt < 250;
+    var onText = e.target && e.target.closest && e.target.closest("a, button");
+    if (quick && !onText && phase === "free" && !reduced) {
+      phaseAt = performance.now() - 7000;   // trip the gather branch next frame
+    }
+  }, { passive: true });
 
   window.addEventListener("resize", resize);
   document.addEventListener("visibilitychange", function () {
