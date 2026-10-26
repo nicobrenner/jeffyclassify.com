@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Classifiers</title>
+<meta name="description" content="Live, interactive text classifiers running on CPU: banking intent across 77 classes, SMS spam, and emotion detection. Try each one in the browser, or pip install jeffy-classify.">
+<link rel="icon" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="canonical" href="https://jeffyclassify.com/classifiers/">
+<meta property="og:title" content="Jeffy Classifiers">
+<meta property="og:description" content="Live text classifiers running on CPU: 77-class banking intent, SMS spam, and emotion detection. Try them in the browser.">
+<meta property="og:url" content="https://jeffyclassify.com/classifiers/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Jeffy">
+<meta name="twitter:card" content="summary_large_image">
+<meta property="og:image" content="https://jeffyclassify.com/blog/og.png">
+<meta name="twitter:image" content="https://jeffyclassify.com/blog/og.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700&display=swap">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BXL0V8163H"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-BXL0V8163H')</script>
+<script defer src="https://stats.jeffyclassify.com/script.js" data-website-id="f9036a1c-0cc2-4e1d-ac25-2eb9e5dfc530" data-tag="classifiers-index"></script>
+<script defer src="https://stats.jeffyclassify.com/recorder.js" data-website-id="f9036a1c-0cc2-4e1d-ac25-2eb9e5dfc530" data-tag="classifiers-index"></script>
+<style>
+:root {
+  --bg: #0a0a0c;
+  --fg: #e0dfd8;
+  --fg-muted: #8a8880;
+  --surface: #141418;
+  --surface-raised: #1c1c22;
+  --border: #2a2a30;
+  --accent: #20d49a;
+  --accent-dim: #178c68;
+  --tag-bench: #e86b35;
+  --tag-demo: #9b6dff;
+  --tag-guide: #5da0e8;
+  --font-display: 'IBM Plex Mono', monospace;
+  --font-body: 'Source Sans 3', -apple-system, sans-serif;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  line-height: 1.65;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 20px 60px;
+}
+
+.crumb {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  color: var(--fg-muted);
+  padding-top: 28px;
+}
+.crumb a { color: var(--accent-dim); text-decoration: none; }
+.crumb a:hover { color: var(--accent); }
+.crumb .sep { margin: 0 7px; opacity: 0.5; }
+
+h1 {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--accent);
+  margin: 1.6rem 0 0.4rem;
+}
+
+.lede { color: var(--fg-muted); margin: 0 0 2rem; }
+
+.posts { display: flex; flex-direction: column; gap: 14px; }
+
+.post-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.post-card:hover { border-color: var(--accent-dim); background: var(--surface-raised); }
+.post-content { flex: 1; min-width: 0; }
+
+.post-tag {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+.tag-benchmark { color: var(--tag-bench); background: rgba(232,107,53,0.12); }
+.tag-demo { color: var(--tag-demo); background: rgba(155,109,255,0.12); }
+.tag-guide { color: var(--tag-guide); background: rgba(93,160,232,0.12); }
+
+.post-title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 4px;
+  color: var(--fg);
+}
+.post-desc { font-size: 0.88rem; color: var(--fg-muted); margin: 0; }
+
+.card-stat {
+  font-family: var(--font-display);
+  text-align: right;
+  flex-shrink: 0;
+}
+.card-stat .v { font-size: 1.4rem; font-weight: 600; color: var(--accent); line-height: 1.1; }
+.card-stat .l { font-size: 0.68rem; color: var(--fg-muted); }
+
+.note {
+  margin-top: 2.4rem;
+  padding: 16px 18px;
+  background: var(--surface);
+  border-left: 3px solid var(--accent-dim);
+  border-radius: 0 8px 8px 0;
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+.note code {
+  font-family: var(--font-display);
+  font-size: 0.85em;
+  background: var(--surface-raised);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--accent);
+}
+.note a { color: var(--accent); }
+
+footer {
+  margin-top: 3rem;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  color: var(--fg-muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+footer a { color: var(--accent-dim); text-decoration: none; }
+footer a:hover { color: var(--accent); }
+
+@media (max-width: 520px) {
+  h1 { font-size: 1.25rem; }
+  .post-card { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .card-stat { text-align: left; }
+}
+</style>
+</head>
+<body>
+
+<div class="crumb">
+  <a href="/">Jeffy</a><span class="sep">/</span>Classifiers
+</div>
+
+<h1>Classifiers you can try right now</h1>
+<p class="lede">
+  Each one runs in your browser against a CPU server. No GPU, no API key, no model download.
+  They are the same packs you get from <code>pip install jeffy-classify</code>
+</p>
+
+<div class="posts">
+
+  <a href="banking77/" class="post-card">
+    <div class="post-content">
+      <span class="post-tag tag-benchmark">77 classes</span>
+      <h2 class="post-title">Banking intent</h2>
+      <p class="post-desc">Route a customer message to one of 77 banking intents. The hardest task in our benchmark, and the one where LLMs fall apart</p>
+    </div>
+    <div class="card-stat"><div class="v">94.3%</div><div class="l">accuracy</div></div>
+  </a>
+
+  <a href="sms-spam/" class="post-card">
+    <div class="post-content">
+      <span class="post-tag tag-guide">2 classes</span>
+      <h2 class="post-title">SMS spam</h2>
+      <p class="post-desc">Ham or spam. The classic binary text classification task, and a good first thing to try if you want to see the speed</p>
+    </div>
+    <div class="card-stat"><div class="v">99.1%</div><div class="l">accuracy</div></div>
+  </a>
+
+  <a href="emotion/" class="post-card">
+    <div class="post-content">
+      <span class="post-tag tag-demo">6 classes</span>
+      <h2 class="post-title">Emotion</h2>
+      <p class="post-desc">Sadness, joy, love, anger, fear, surprise. Genuinely ambiguous labels, so it is the honest one to poke at</p>
+    </div>
+    <div class="card-stat"><div class="v">75.5%</div><div class="l">accuracy</div></div>
+  </a>
+
+</div>
+
+<div class="note">
+  These three are a sample. The package ships <strong>72 classifiers</strong> across 51
+  languages, and you can train your own on your own categories in seconds
+  <br><br>
+  <code>pip install jeffy-classify</code> &middot;
+  <a href="/benchmark/">how they compare</a> &middot;
+  <a href="https://playground.jeffyclassify.com/">playground</a> &middot;
+  <a href="https://github.com/nicobrenner/jeffy">source</a>
+</div>
+
+<footer>
+  <a href="/">Home</a>
+  <a href="/blog/">Blog</a>
+  <a href="/benchmark/">Benchmark</a>
+  <a href="https://github.com/nicobrenner/jeffy">GitHub</a>
+</footer>
+
+</body>
+</html>

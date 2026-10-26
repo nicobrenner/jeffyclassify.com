@@ -26,6 +26,11 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://jeffyclassify.com/classifiers/</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://jeffyclassify.com/blog/polish-guy-was-right/</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
