@@ -233,6 +233,19 @@ footer a:hover { text-decoration: underline; }
     <div class="chart-box scatter-box"><canvas id="ch-scatter"></canvas></div>
   </div>
   <div class="callout">
+    <b>The budgets are not equal, and that matters.</b> SetFit's contrastive training is
+    quadratic in training-set size, so it gets 1,540 banking77 examples (20 per class) where
+    Jeffy gets 10,003. Comparing those two confuses "does adapting the encoder help" with
+    "does more data help". Run Jeffy's frozen head at <b>SetFit's own budget</b>, stratified
+    over 5 seeds, and it scores <b>91.5%</b> against SetFit's 85.0%, training in seconds
+    rather than 982. At 5 examples per class it already reaches 85.9%, above SetFit's
+    20-shot number. Caveat: different encoder and test subset from the rows below, so treat
+    it as a strong signal rather than a benchmark row
+    (<a href="https://github.com/nicobrenner/jeffy/blob/main/data/eval_results/matched_budget_vs_setfit.json">data</a>,
+    <a href="https://github.com/nicobrenner/jeffy/blob/main/scripts/matched_budget_vs_setfit.py">script</a>)
+  </div>
+
+  <div class="callout">
     <b>Read the corners.</b> The big LLMs sit far right: slow, and on 77 classes not even
     accurate. FastText is the fastest thing here by two orders of magnitude and, tuned, it is
     genuinely competitive on accuracy, but it ships an 800&nbsp;MB model for one task.
