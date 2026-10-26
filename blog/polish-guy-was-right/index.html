@@ -583,6 +583,28 @@ footer a:hover { color: var(--accent); }
 }
 .lc-prov a { color: #5f5f68; text-decoration: underline; text-underline-offset: 2px; }
 .lc-prov a:hover { color: var(--accent); }
+.lc-sub { font-size: 10px; fill: #5a5a62; }
+.lc-bar { cursor: pointer; }
+#lc-tip {
+  position: fixed;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  background: #16161c;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 11px;
+  font-family: var(--font-display);
+  font-size: 0.74rem;
+  line-height: 1.55;
+  color: var(--fg);
+  box-shadow: 0 6px 22px rgba(0,0,0,0.55);
+  max-width: 250px;
+}
+#lc-tip.on { opacity: 1; }
+#lc-tip b { color: var(--accent); }
+#lc-tip .t-sub { color: var(--fg-muted); }
 .langchart { display: block; font-family: var(--font-display); }
 .langchart text { fill: var(--fg-muted); }
 .lc-grid   { font-size: 10px; fill: #4a4a54; }
@@ -606,7 +628,7 @@ footer a:hover { color: var(--accent); }
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  opacity: 0.45;
+  opacity: 0.34;
 }
 body > h1, body > h2, body > p, body > table, body > div, body > figure, body > footer { position: relative; }
 </style>
@@ -619,82 +641,137 @@ body > h1, body > h2, body > p, body > table, body > div, body > figure, body > 
 <p class="dateline">Oct 2026 &middot; Multilingual &middot; Nico Brenner</p>
 
 <figure class="chartfig">
-<svg class="langchart" viewBox="0 0 720 284" width="100%" role="img" aria-labelledby="lc-title lc-desc" xmlns="http://www.w3.org/2000/svg">
-<title id="lc-title">Accuracy on MASSIVE intent classification across 51 languages</title>
-<desc id="lc-desc">Frozen LaBSE embeddings plus logistic regression. Every language scores between 76.4 and 86.5 percent. Polish is 4th of 51.</desc>
+<svg class="langchart" viewBox="0 0 720 284" width="100%" role="img" aria-labelledby="lc1-t lc1-d" xmlns="http://www.w3.org/2000/svg">
+<title id="lc1-t">Accuracy across 51 languages</title>
+<desc id="lc1-d">Frozen LaBSE embeddings plus logistic regression on MASSIVE intent classification. Every language scores between 76.4 and 86.5 percent. Polish is 4th of 51.</desc>
 <rect x="40" y="16" width="9" height="9" rx="2" fill="#20d49a"/>
 <text x="55" y="24.5" class="lc-legend" fill="#20d49a">English 86.1%  (#2)</text>
 <rect x="210.1" y="16" width="9" height="9" rx="2" fill="#ff6d3a"/>
 <text x="225.1" y="24.5" class="lc-legend" fill="#ff6d3a">Polish 85.4%  (#4)</text>
-<line x1="40" y1="224.4" x2="712" y2="224.4" stroke="#2a2a30" stroke-width="1"/>
-<text x="34" y="227.9" class="lc-grid" text-anchor="end">76%</text>
-<line x1="40" y1="165.1" x2="712" y2="165.1" stroke="#2a2a30" stroke-width="1"/>
-<text x="34" y="168.6" class="lc-grid" text-anchor="end">80%</text>
-<line x1="40" y1="105.9" x2="712" y2="105.9" stroke="#2a2a30" stroke-width="1"/>
-<text x="34" y="109.4" class="lc-grid" text-anchor="end">84%</text>
-<rect class="lc-bar" x="42.2" y="69.1" width="8.7" height="184.9" rx="1.5" fill="#3c3c45"><title>fr: 86.48%</title></rect>
-<rect class="lc-bar lc-hl" x="55.4" y="75.0" width="8.7" height="179.0" rx="1.5" fill="#20d49a"><title>en: 86.08%</title></rect>
-<rect class="lc-bar" x="68.6" y="82.0" width="8.7" height="172.0" rx="1.5" fill="#3c3c45"><title>ru: 85.61%</title></rect>
-<rect class="lc-bar lc-hl" x="81.8" y="84.5" width="8.7" height="169.5" rx="1.5" fill="#ff6d3a"><title>pl: 85.44%</title></rect>
-<rect class="lc-bar" x="94.9" y="85.6" width="8.7" height="168.4" rx="1.5" fill="#3c3c45"><title>fa: 85.37%</title></rect>
-<rect class="lc-bar" x="108.1" y="87.9" width="8.7" height="166.1" rx="1.5" fill="#3c3c45"><title>hu: 85.21%</title></rect>
-<rect class="lc-bar" x="121.3" y="87.9" width="8.7" height="166.1" rx="1.5" fill="#3c3c45"><title>sv: 85.21%</title></rect>
-<rect class="lc-bar" x="134.5" y="88.5" width="8.7" height="165.5" rx="1.5" fill="#3c3c45"><title>ja: 85.17%</title></rect>
-<rect class="lc-bar" x="147.7" y="89.6" width="8.7" height="164.4" rx="1.5" fill="#3c3c45"><title>hi: 85.10%</title></rect>
-<rect class="lc-bar" x="160.8" y="91.5" width="8.7" height="162.5" rx="1.5" fill="#3c3c45"><title>pt: 84.97%</title></rect>
-<rect class="lc-bar" x="174.0" y="91.9" width="8.7" height="162.1" rx="1.5" fill="#3c3c45"><title>id: 84.94%</title></rect>
-<rect class="lc-bar" x="187.2" y="92.5" width="8.7" height="161.5" rx="1.5" fill="#3c3c45"><title>az: 84.90%</title></rect>
-<rect class="lc-bar" x="200.4" y="93.0" width="8.7" height="161.0" rx="1.5" fill="#3c3c45"><title>nl: 84.87%</title></rect>
-<rect class="lc-bar" x="213.5" y="94.4" width="8.7" height="159.6" rx="1.5" fill="#3c3c45"><title>ms: 84.77%</title></rect>
-<rect class="lc-bar" x="226.7" y="97.0" width="8.7" height="157.0" rx="1.5" fill="#3c3c45"><title>tr: 84.60%</title></rect>
-<rect class="lc-bar" x="239.9" y="97.4" width="8.7" height="156.6" rx="1.5" fill="#3c3c45"><title>da: 84.57%</title></rect>
-<rect class="lc-bar" x="253.1" y="97.4" width="8.7" height="156.6" rx="1.5" fill="#3c3c45"><title>es: 84.57%</title></rect>
-<rect class="lc-bar" x="266.2" y="98.4" width="8.7" height="155.6" rx="1.5" fill="#3c3c45"><title>ko: 84.50%</title></rect>
-<rect class="lc-bar" x="279.4" y="99.5" width="8.7" height="154.5" rx="1.5" fill="#3c3c45"><title>ro: 84.43%</title></rect>
-<rect class="lc-bar" x="292.6" y="100.5" width="8.7" height="153.5" rx="1.5" fill="#3c3c45"><title>fi: 84.36%</title></rect>
-<rect class="lc-bar" x="305.8" y="100.5" width="8.7" height="153.5" rx="1.5" fill="#3c3c45"><title>sl: 84.36%</title></rect>
-<rect class="lc-bar" x="318.9" y="100.5" width="8.7" height="153.5" rx="1.5" fill="#3c3c45"><title>zh-CN: 84.36%</title></rect>
-<rect class="lc-bar" x="332.1" y="101.4" width="8.7" height="152.6" rx="1.5" fill="#3c3c45"><title>sq: 84.30%</title></rect>
-<rect class="lc-bar" x="345.3" y="102.0" width="8.7" height="152.0" rx="1.5" fill="#3c3c45"><title>nb: 84.26%</title></rect>
-<rect class="lc-bar" x="358.5" y="102.4" width="8.7" height="151.6" rx="1.5" fill="#3c3c45"><title>it: 84.23%</title></rect>
-<rect class="lc-bar" x="371.7" y="103.5" width="8.7" height="150.5" rx="1.5" fill="#3c3c45"><title>lv: 84.16%</title></rect>
-<rect class="lc-bar" x="384.8" y="107.5" width="8.7" height="146.5" rx="1.5" fill="#3c3c45"><title>mn: 83.89%</title></rect>
-<rect class="lc-bar" x="398.0" y="113.4" width="8.7" height="140.6" rx="1.5" fill="#3c3c45"><title>af: 83.49%</title></rect>
-<rect class="lc-bar" x="411.2" y="113.4" width="8.7" height="140.6" rx="1.5" fill="#3c3c45"><title>de: 83.49%</title></rect>
-<rect class="lc-bar" x="424.4" y="113.9" width="8.7" height="140.1" rx="1.5" fill="#3c3c45"><title>el: 83.46%</title></rect>
-<rect class="lc-bar" x="437.5" y="114.9" width="8.7" height="139.1" rx="1.5" fill="#3c3c45"><title>vi: 83.39%</title></rect>
-<rect class="lc-bar" x="450.7" y="115.3" width="8.7" height="138.7" rx="1.5" fill="#3c3c45"><title>te: 83.36%</title></rect>
-<rect class="lc-bar" x="463.9" y="120.8" width="8.7" height="133.2" rx="1.5" fill="#3c3c45"><title>ml: 82.99%</title></rect>
-<rect class="lc-bar" x="477.1" y="121.9" width="8.7" height="132.1" rx="1.5" fill="#3c3c45"><title>he: 82.92%</title></rect>
-<rect class="lc-bar" x="490.2" y="122.9" width="8.7" height="131.1" rx="1.5" fill="#3c3c45"><title>bn: 82.85%</title></rect>
-<rect class="lc-bar" x="503.4" y="125.9" width="8.7" height="128.1" rx="1.5" fill="#3c3c45"><title>tl: 82.65%</title></rect>
-<rect class="lc-bar" x="516.6" y="128.4" width="8.7" height="125.6" rx="1.5" fill="#3c3c45"><title>is: 82.48%</title></rect>
-<rect class="lc-bar" x="529.8" y="128.8" width="8.7" height="125.2" rx="1.5" fill="#3c3c45"><title>ur: 82.45%</title></rect>
-<rect class="lc-bar" x="542.9" y="129.9" width="8.7" height="124.1" rx="1.5" fill="#3c3c45"><title>hy: 82.38%</title></rect>
-<rect class="lc-bar" x="556.1" y="130.3" width="8.7" height="123.7" rx="1.5" fill="#3c3c45"><title>kn: 82.35%</title></rect>
-<rect class="lc-bar" x="569.3" y="131.3" width="8.7" height="122.7" rx="1.5" fill="#3c3c45"><title>th: 82.28%</title></rect>
-<rect class="lc-bar" x="582.5" y="135.3" width="8.7" height="118.7" rx="1.5" fill="#3c3c45"><title>ta: 82.01%</title></rect>
-<rect class="lc-bar" x="595.7" y="147.8" width="8.7" height="106.2" rx="1.5" fill="#3c3c45"><title>am: 81.17%</title></rect>
-<rect class="lc-bar" x="608.8" y="147.8" width="8.7" height="106.2" rx="1.5" fill="#3c3c45"><title>my: 81.17%</title></rect>
-<rect class="lc-bar" x="622.0" y="148.2" width="8.7" height="105.8" rx="1.5" fill="#3c3c45"><title>zh-TW: 81.14%</title></rect>
-<rect class="lc-bar" x="635.2" y="158.3" width="8.7" height="95.7" rx="1.5" fill="#3c3c45"><title>cy: 80.46%</title></rect>
-<rect class="lc-bar" x="648.4" y="158.3" width="8.7" height="95.7" rx="1.5" fill="#3c3c45"><title>sw: 80.46%</title></rect>
-<rect class="lc-bar" x="661.5" y="182.6" width="8.7" height="71.4" rx="1.5" fill="#3c3c45"><title>jv: 78.82%</title></rect>
-<rect class="lc-bar" x="674.7" y="186.6" width="8.7" height="67.4" rx="1.5" fill="#3c3c45"><title>ka: 78.55%</title></rect>
-<rect class="lc-bar" x="687.9" y="195.6" width="8.7" height="58.4" rx="1.5" fill="#3c3c45"><title>ar: 77.94%</title></rect>
-<rect class="lc-bar" x="701.1" y="219.0" width="8.7" height="35.0" rx="1.5" fill="#3c3c45"><title>km: 76.36%</title></rect>
-<line x1="40" y1="89.6" x2="712" y2="89.6" stroke="#8a8880" stroke-width="1.5" stroke-dasharray="5 4"/>
-<text x="710" y="83.6" class="lc-ref" fill="#8a8880" text-anchor="end">fine-tuned XLM-R, mean 85.1%</text>
-<line x1="40" y1="115.9" x2="712" y2="115.9" stroke="#20d49a" stroke-width="1.5" stroke-dasharray="5 4"/>
-<text x="710" y="109.9" class="lc-ref" fill="#20d49a" text-anchor="end">Jeffy, mean 83.3%</text>
-<line x1="40" y1="254" x2="712" y2="254" stroke="#44444e" stroke-width="1"/>
-<text x="40" y="272" class="lc-axis">best: fr 86.5%</text>
+<rect x="373.29999999999995" y="20.5" width="11" height="2" fill="#6b6b76"/>
+<text x="390.29999999999995" y="24.5" class="lc-legend" fill="#8a8880">fine-tuned XLM-R</text>
+<line x1="40" y1="227.3" x2="712" y2="227.3" stroke="#2a2a30"/>
+<text x="34" y="230.8" class="lc-grid" text-anchor="end">76%</text>
+<line x1="40" y1="174.0" x2="712" y2="174.0" stroke="#2a2a30"/>
+<text x="34" y="177.5" class="lc-grid" text-anchor="end">80%</text>
+<line x1="40" y1="120.7" x2="712" y2="120.7" stroke="#2a2a30"/>
+<text x="34" y="124.2" class="lc-grid" text-anchor="end">84%</text>
+<line x1="40" y1="67.3" x2="712" y2="67.3" stroke="#2a2a30"/>
+<text x="34" y="70.8" class="lc-grid" text-anchor="end">88%</text>
+<rect class="lc-bar" x="42.2" y="87.6" width="8.7" height="166.4" rx="1.5" fill="#3c3c45" data-name="French" data-code="fr" data-acc="86.48" data-rank="1" data-n="51" data-xlmr="86.3" data-family="Romance"/>
+<rect x="41.4" y="89.0" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="55.4" y="92.9" width="8.7" height="161.1" rx="1.5" fill="#20d49a" data-name="English" data-code="en" data-acc="86.08" data-rank="2" data-n="51" data-xlmr="88.3" data-family="Germanic"/>
+<rect x="54.6" y="62.3" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="68.6" y="99.2" width="8.7" height="154.8" rx="1.5" fill="#3c3c45" data-name="Russian" data-code="ru" data-acc="85.61" data-rank="3" data-n="51" data-xlmr="87.2" data-family="Slavic"/>
+<rect x="67.8" y="77.0" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="81.8" y="101.5" width="8.7" height="152.5" rx="1.5" fill="#ff6d3a" data-name="Polish" data-code="pl" data-acc="85.44" data-rank="4" data-n="51" data-xlmr="85.8" data-family="Slavic"/>
+<rect x="81.0" y="95.7" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="94.9" y="102.4" width="8.7" height="151.6" rx="1.5" fill="#3c3c45" data-name="Persian" data-code="fa" data-acc="85.37" data-rank="5" data-n="51" data-xlmr="87.0" data-family="Indo-Iranian"/>
+<rect x="94.1" y="79.7" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="108.1" y="104.5" width="8.7" height="149.5" rx="1.5" fill="#3c3c45" data-name="Hungarian" data-code="hu" data-acc="85.21" data-rank="6" data-n="51" data-xlmr="86.2" data-family="Uralic"/>
+<rect x="107.3" y="90.3" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="121.3" y="104.5" width="8.7" height="149.5" rx="1.5" fill="#3c3c45" data-name="Swedish" data-code="sv" data-acc="85.21" data-rank="7" data-n="51" data-xlmr="87.9" data-family="Germanic"/>
+<rect x="120.5" y="67.7" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="134.5" y="105.1" width="8.7" height="148.9" rx="1.5" fill="#3c3c45" data-name="Japanese" data-code="ja" data-acc="85.17" data-rank="8" data-n="51" data-xlmr="83.9" data-family="East Asian"/>
+<rect x="133.7" y="121.0" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="147.7" y="106.0" width="8.7" height="148.0" rx="1.5" fill="#3c3c45" data-name="Hindi" data-code="hi" data-acc="85.10" data-rank="9" data-n="51" data-xlmr="85.8" data-family="Indo-Iranian"/>
+<rect x="146.9" y="95.7" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="160.8" y="107.7" width="8.7" height="146.3" rx="1.5" fill="#3c3c45" data-name="Portuguese" data-code="pt" data-acc="84.97" data-rank="10" data-n="51" data-xlmr="86.7" data-family="Romance"/>
+<rect x="160.0" y="83.7" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="174.0" y="108.1" width="8.7" height="145.9" rx="1.5" fill="#3c3c45" data-name="Indonesian" data-code="id" data-acc="84.94" data-rank="11" data-n="51" data-xlmr="87.1" data-family="SE Asian"/>
+<rect x="173.2" y="78.3" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="187.2" y="108.7" width="8.7" height="145.3" rx="1.5" fill="#3c3c45" data-name="Azerbaijani" data-code="az" data-acc="84.90" data-rank="12" data-n="51" data-xlmr="86.2" data-family="Turkic"/>
+<rect x="186.4" y="90.3" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="200.4" y="109.1" width="8.7" height="144.9" rx="1.5" fill="#3c3c45" data-name="Dutch" data-code="nl" data-acc="84.87" data-rank="13" data-n="51" data-xlmr="86.8" data-family="Germanic"/>
+<rect x="199.6" y="82.3" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="213.5" y="110.4" width="8.7" height="143.6" rx="1.5" fill="#3c3c45" data-name="Malay" data-code="ms" data-acc="84.77" data-rank="14" data-n="51" data-xlmr="86.1" data-family="SE Asian"/>
+<rect x="212.7" y="91.7" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="226.7" y="112.7" width="8.7" height="141.3" rx="1.5" fill="#3c3c45" data-name="Turkish" data-code="tr" data-acc="84.60" data-rank="15" data-n="51" data-xlmr="86.3" data-family="Turkic"/>
+<rect x="225.9" y="89.0" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="239.9" y="113.1" width="8.7" height="140.9" rx="1.5" fill="#3c3c45" data-name="Danish" data-code="da" data-acc="84.57" data-rank="16" data-n="51" data-xlmr="86.9" data-family="Germanic"/>
+<rect x="239.1" y="81.0" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="253.1" y="113.1" width="8.7" height="140.9" rx="1.5" fill="#3c3c45" data-name="Spanish" data-code="es" data-acc="84.57" data-rank="17" data-n="51" data-xlmr="86.9" data-family="Romance"/>
+<rect x="252.3" y="81.0" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="266.2" y="114.0" width="8.7" height="140.0" rx="1.5" fill="#3c3c45" data-name="Korean" data-code="ko" data-acc="84.50" data-rank="18" data-n="51" data-xlmr="86.5" data-family="East Asian"/>
+<rect x="265.4" y="86.3" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="279.4" y="114.9" width="8.7" height="139.1" rx="1.5" fill="#3c3c45" data-name="Romanian" data-code="ro" data-acc="84.43" data-rank="19" data-n="51" data-xlmr="86.9" data-family="Romance"/>
+<rect x="278.6" y="81.0" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="292.6" y="115.9" width="8.7" height="138.1" rx="1.5" fill="#3c3c45" data-name="Finnish" data-code="fi" data-acc="84.36" data-rank="20" data-n="51" data-xlmr="85.5" data-family="Uralic"/>
+<rect x="291.8" y="99.7" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="305.8" y="115.9" width="8.7" height="138.1" rx="1.5" fill="#3c3c45" data-name="Slovenian" data-code="sl" data-acc="84.36" data-rank="21" data-n="51" data-xlmr="86.3" data-family="Slavic"/>
+<rect x="305.0" y="89.0" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="318.9" y="115.9" width="8.7" height="138.1" rx="1.5" fill="#3c3c45" data-name="Chinese (Simplified)" data-code="zh-CN" data-acc="84.36" data-rank="22" data-n="51" data-xlmr="84.9" data-family="East Asian"/>
+<rect x="318.1" y="107.7" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="332.1" y="116.7" width="8.7" height="137.3" rx="1.5" fill="#3c3c45" data-name="Albanian" data-code="sq" data-acc="84.30" data-rank="23" data-n="51" data-xlmr="86.4" data-family="Other"/>
+<rect x="331.3" y="87.7" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="345.3" y="117.2" width="8.7" height="136.8" rx="1.5" fill="#3c3c45" data-name="Norwegian" data-code="nb" data-acc="84.26" data-rank="24" data-n="51" data-xlmr="87.3" data-family="Germanic"/>
+<rect x="344.5" y="75.7" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="358.5" y="117.6" width="8.7" height="136.4" rx="1.5" fill="#3c3c45" data-name="Italian" data-code="it" data-acc="84.23" data-rank="25" data-n="51" data-xlmr="86.6" data-family="Romance"/>
+<rect x="357.7" y="85.0" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="371.7" y="118.5" width="8.7" height="135.5" rx="1.5" fill="#3c3c45" data-name="Latvian" data-code="lv" data-acc="84.16" data-rank="26" data-n="51" data-xlmr="86.1" data-family="Baltic"/>
+<rect x="370.9" y="91.7" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="384.8" y="122.1" width="8.7" height="131.9" rx="1.5" fill="#3c3c45" data-name="Mongolian" data-code="mn" data-acc="83.89" data-rank="27" data-n="51" data-xlmr="84.3" data-family="East Asian"/>
+<rect x="384.0" y="115.7" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="398.0" y="127.5" width="8.7" height="126.5" rx="1.5" fill="#3c3c45" data-name="Afrikaans" data-code="af" data-acc="83.49" data-rank="28" data-n="51" data-xlmr="85.6" data-family="Germanic"/>
+<rect x="397.2" y="98.3" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="411.2" y="127.5" width="8.7" height="126.5" rx="1.5" fill="#3c3c45" data-name="German" data-code="de" data-acc="83.49" data-rank="29" data-n="51" data-xlmr="85.7" data-family="Germanic"/>
+<rect x="410.4" y="97.0" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="424.4" y="127.9" width="8.7" height="126.1" rx="1.5" fill="#3c3c45" data-name="Greek" data-code="el" data-acc="83.46" data-rank="30" data-n="51" data-xlmr="86.2" data-family="Hellenic"/>
+<rect x="423.6" y="90.3" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="437.5" y="128.8" width="8.7" height="125.2" rx="1.5" fill="#3c3c45" data-name="Vietnamese" data-code="vi" data-acc="83.39" data-rank="31" data-n="51" data-xlmr="86.3" data-family="SE Asian"/>
+<rect x="436.7" y="89.0" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="450.7" y="129.2" width="8.7" height="124.8" rx="1.5" fill="#3c3c45" data-name="Telugu" data-code="te" data-acc="83.36" data-rank="32" data-n="51" data-xlmr="84.5" data-family="Dravidian"/>
+<rect x="449.9" y="113.0" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="463.9" y="134.1" width="8.7" height="119.9" rx="1.5" fill="#3c3c45" data-name="Malayalam" data-code="ml" data-acc="82.99" data-rank="33" data-n="51" data-xlmr="85.1" data-family="Dravidian"/>
+<rect x="463.1" y="105.0" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="477.1" y="135.1" width="8.7" height="118.9" rx="1.5" fill="#3c3c45" data-name="Hebrew" data-code="he" data-acc="82.92" data-rank="34" data-n="51" data-xlmr="85.9" data-family="Semitic"/>
+<rect x="476.3" y="94.3" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="490.2" y="136.0" width="8.7" height="118.0" rx="1.5" fill="#3c3c45" data-name="Bengali" data-code="bn" data-acc="82.85" data-rank="35" data-n="51" data-xlmr="84.1" data-family="Indo-Iranian"/>
+<rect x="489.4" y="118.3" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="503.4" y="138.7" width="8.7" height="115.3" rx="1.5" fill="#3c3c45" data-name="Filipino" data-code="tl" data-acc="82.65" data-rank="36" data-n="51" data-xlmr="84.6" data-family="SE Asian"/>
+<rect x="502.6" y="111.7" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="516.6" y="140.9" width="8.7" height="113.1" rx="1.5" fill="#3c3c45" data-name="Icelandic" data-code="is" data-acc="82.48" data-rank="37" data-n="51" data-xlmr="85.3" data-family="Germanic"/>
+<rect x="515.8" y="102.3" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="529.8" y="141.3" width="8.7" height="112.7" rx="1.5" fill="#3c3c45" data-name="Urdu" data-code="ur" data-acc="82.45" data-rank="38" data-n="51" data-xlmr="83.2" data-family="Indo-Iranian"/>
+<rect x="529.0" y="130.3" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="542.9" y="142.3" width="8.7" height="111.7" rx="1.5" fill="#3c3c45" data-name="Armenian" data-code="hy" data-acc="82.38" data-rank="39" data-n="51" data-xlmr="84.4" data-family="Other"/>
+<rect x="542.1" y="114.3" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="556.1" y="142.7" width="8.7" height="111.3" rx="1.5" fill="#3c3c45" data-name="Kannada" data-code="kn" data-acc="82.35" data-rank="40" data-n="51" data-xlmr="84.0" data-family="Dravidian"/>
+<rect x="555.3" y="119.7" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="569.3" y="143.6" width="8.7" height="110.4" rx="1.5" fill="#3c3c45" data-name="Thai" data-code="th" data-acc="82.28" data-rank="41" data-n="51" data-xlmr="84.7" data-family="SE Asian"/>
+<rect x="568.5" y="110.3" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="582.5" y="147.2" width="8.7" height="106.8" rx="1.5" fill="#3c3c45" data-name="Tamil" data-code="ta" data-acc="82.01" data-rank="42" data-n="51" data-xlmr="83.5" data-family="Dravidian"/>
+<rect x="581.7" y="126.3" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="595.7" y="158.4" width="8.7" height="95.6" rx="1.5" fill="#3c3c45" data-name="Amharic" data-code="am" data-acc="81.17" data-rank="43" data-n="51" data-xlmr="81.7" data-family="Semitic"/>
+<rect x="594.9" y="150.3" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="608.8" y="158.4" width="8.7" height="95.6" rx="1.5" fill="#3c3c45" data-name="Burmese" data-code="my" data-acc="81.17" data-rank="44" data-n="51" data-xlmr="83.6" data-family="SE Asian"/>
+<rect x="608.0" y="125.0" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="622.0" y="158.8" width="8.7" height="95.2" rx="1.5" fill="#3c3c45" data-name="Chinese (Traditional)" data-code="zh-TW" data-acc="81.14" data-rank="45" data-n="51" data-xlmr="83.0" data-family="East Asian"/>
+<rect x="621.2" y="133.0" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="635.2" y="167.9" width="8.7" height="86.1" rx="1.5" fill="#3c3c45" data-name="Welsh" data-code="cy" data-acc="80.46" data-rank="46" data-n="51" data-xlmr="82.6" data-family="Celtic"/>
+<rect x="634.4" y="138.3" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="648.4" y="167.9" width="8.7" height="86.1" rx="1.5" fill="#3c3c45" data-name="Swahili" data-code="sw" data-acc="80.46" data-rank="47" data-n="51" data-xlmr="83.1" data-family="Other"/>
+<rect x="647.6" y="131.7" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="661.5" y="189.7" width="8.7" height="64.3" rx="1.5" fill="#3c3c45" data-name="Javanese" data-code="jv" data-acc="78.82" data-rank="48" data-n="51" data-xlmr="82.9" data-family="SE Asian"/>
+<rect x="660.7" y="134.3" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="674.7" y="193.3" width="8.7" height="60.7" rx="1.5" fill="#3c3c45" data-name="Georgian" data-code="ka" data-acc="78.55" data-rank="49" data-n="51" data-xlmr="80.3" data-family="Other"/>
+<rect x="673.9" y="169.0" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="687.9" y="201.5" width="8.7" height="52.5" rx="1.5" fill="#3c3c45" data-name="Arabic" data-code="ar" data-acc="77.94" data-rank="50" data-n="51" data-xlmr="80.7" data-family="Semitic"/>
+<rect x="687.1" y="163.7" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<rect class="lc-bar" x="701.1" y="222.5" width="8.7" height="31.5" rx="1.5" fill="#3c3c45" data-name="Khmer" data-code="km" data-acc="76.36" data-rank="51" data-n="51" data-xlmr="77.2" data-family="SE Asian"/>
+<rect x="700.3" y="210.3" width="10.3" height="2" fill="#6b6b76" opacity="0.85" pointer-events="none"/>
+<line x1="40" y1="129.7" x2="712" y2="129.7" stroke="#20d49a" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="710" y="123.7" class="lc-ref" fill="#20d49a" text-anchor="end">our mean 83.3%</text>
+<line x1="40" y1="254" x2="712" y2="254" stroke="#44444e"/>
+<text x="40" y="272" class="lc-axis">best: French 86.5%</text>
 <text x="360" y="272" class="lc-axis" text-anchor="middle">51 languages, ranked</text>
-<text x="712" y="272" class="lc-axis" text-anchor="end">worst: km 76.4%</text>
+<text x="712" y="272" class="lc-axis" text-anchor="end">worst: Khmer 76.4%</text>
 </svg>
 <figcaption>
   Same model, same 60 intents, 51 languages. The whole spread is ten points wide
-  and <strong>Polish comes 4th</strong>, 0.6 behind English. No fine-tuning, no GPU
+  and <strong>Polish comes 4th</strong>, 0.6 behind English. No fine-tuning, no GPU.
+  Grey ticks are fine-tuned XLM-R on that same language, so you can see the real gap
+  per language rather than against an average. Hover or tap any bar
   <span class="lc-prov">MASSIVE intent &middot; 60 classes &middot; 2,974 test utterances per language
   &middot; 11,514 train &middot; frozen LaBSE + logistic regression, C tuned per language &middot; CPU
   &middot; <a href="https://github.com/nicobrenner/jeffy/blob/main/data/eval_results/labse_51_results.csv">labse_51_results.csv</a></span>
@@ -783,6 +860,96 @@ body > h1, body > h2, body > p, body > table, body > div, body > figure, body > 
 <p>
   The more useful comparison is against zero-shot cross-lingual transfer: train XLM-R on English only, then point it at the other 50 languages. That is the technical version of "wait for the frontier to get here." A small head trained on the target language's own data beat it in <strong>all 50</strong> non-English languages, by 12.6 points on average, and the advantage was largest for the languages furthest from English
 </p>
+
+<figure class="chartfig">
+<svg class="langchart" viewBox="0 0 720 300" width="100%" role="img" aria-labelledby="lc2-t lc2-d" xmlns="http://www.w3.org/2000/svg">
+<title id="lc2-t">Our advantage over zero-shot cross-lingual transfer</title>
+<desc id="lc2-d">A small head trained on each language beats XLM-R trained on English only in all 50 non-English languages, by 12.6 points on average. The advantage is smallest for Germanic and Romance languages and largest for languages furthest from English, reaching 40 points for Japanese.</desc>
+<rect x="40" y="16" width="9" height="9" rx="2" fill="#ff6d3a"/>
+<text x="55" y="24.5" class="lc-legend" fill="#ff6d3a">far from English</text>
+<rect x="210" y="16" width="9" height="9" rx="2" fill="#4a7fb5"/>
+<text x="225" y="24.5" class="lc-legend" fill="#6d9fd4">Germanic and Romance</text>
+<line x1="40" y1="256.0" x2="712" y2="256.0" stroke="#44444e"/>
+<text x="34" y="259.5" class="lc-grid" text-anchor="end">0</text>
+<line x1="40" y1="209.7" x2="712" y2="209.7" stroke="#2a2a30"/>
+<text x="34" y="213.2" class="lc-grid" text-anchor="end">+10</text>
+<line x1="40" y1="163.5" x2="712" y2="163.5" stroke="#2a2a30"/>
+<text x="34" y="167.0" class="lc-grid" text-anchor="end">+20</text>
+<line x1="40" y1="117.2" x2="712" y2="117.2" stroke="#2a2a30"/>
+<text x="34" y="120.7" class="lc-grid" text-anchor="end">+30</text>
+<line x1="40" y1="70.9" x2="712" y2="70.9" stroke="#2a2a30"/>
+<text x="34" y="74.4" class="lc-grid" text-anchor="end">+40</text>
+<rect class="lc-bar" x="42.3" y="69.2" width="8.9" height="186.8" rx="1.5" fill="#ff6d3a" data-name="Japanese" data-code="ja" data-acc="85.17" data-zero="44.8" data-gap="40.4" data-family="East Asian"/>
+<rect class="lc-bar" x="55.7" y="99.3" width="8.9" height="156.7" rx="1.5" fill="#ff6d3a" data-name="Swahili" data-code="sw" data-acc="80.46" data-zero="46.6" data-gap="33.9" data-family="Other"/>
+<rect class="lc-bar" x="69.2" y="100.7" width="8.9" height="155.3" rx="1.5" fill="#ff6d3a" data-name="Welsh" data-code="cy" data-acc="80.46" data-zero="46.9" data-gap="33.6" data-family="Celtic"/>
+<rect class="lc-bar" x="82.6" y="106.5" width="8.9" height="149.5" rx="1.5" fill="#ff6d3a" data-name="Javanese" data-code="jv" data-acc="78.82" data-zero="46.5" data-gap="32.3" data-family="SE Asian"/>
+<rect class="lc-bar" x="96.0" y="120.6" width="8.9" height="135.4" rx="1.5" fill="#ff6d3a" data-name="Amharic" data-code="am" data-acc="81.17" data-zero="51.9" data-gap="29.3" data-family="Semitic"/>
+<rect class="lc-bar" x="109.5" y="152.1" width="8.9" height="103.9" rx="1.5" fill="#ff6d3a" data-name="Chinese (Simplified)" data-code="zh-CN" data-acc="84.36" data-zero="61.9" data-gap="22.5" data-family="East Asian"/>
+<rect class="lc-bar" x="122.9" y="160.0" width="8.9" height="96.0" rx="1.5" fill="#ff6d3a" data-name="Chinese (Traditional)" data-code="zh-TW" data-acc="81.14" data-zero="60.4" data-gap="20.7" data-family="East Asian"/>
+<rect class="lc-bar" x="136.4" y="165.8" width="8.9" height="90.2" rx="1.5" fill="#ff6d3a" data-name="Mongolian" data-code="mn" data-acc="83.89" data-zero="64.4" data-gap="19.5" data-family="East Asian"/>
+<rect class="lc-bar" x="149.8" y="168.3" width="8.9" height="87.7" rx="1.5" fill="#ff6d3a" data-name="Filipino" data-code="tl" data-acc="82.65" data-zero="63.7" data-gap="19.0" data-family="SE Asian"/>
+<rect class="lc-bar" x="163.2" y="168.8" width="8.9" height="87.2" rx="1.5" fill="#ff6d3a" data-name="Kannada" data-code="kn" data-acc="82.35" data-zero="63.5" data-gap="18.8" data-family="Dravidian"/>
+<rect class="lc-bar" x="176.7" y="175.7" width="8.9" height="80.3" rx="1.5" fill="#ff6d3a" data-name="Georgian" data-code="ka" data-acc="78.55" data-zero="61.2" data-gap="17.3" data-family="Other"/>
+<rect class="lc-bar" x="190.1" y="178.0" width="8.9" height="78.0" rx="1.5" fill="#ff6d3a" data-name="Urdu" data-code="ur" data-acc="82.45" data-zero="65.6" data-gap="16.9" data-family="Indo-Iranian"/>
+<rect class="lc-bar" x="203.6" y="178.0" width="8.9" height="78.0" rx="1.5" fill="#ff6d3a" data-name="Bengali" data-code="bn" data-acc="82.85" data-zero="66.0" data-gap="16.8" data-family="Indo-Iranian"/>
+<rect class="lc-bar" x="217.0" y="178.7" width="8.9" height="77.3" rx="1.5" fill="#ff6d3a" data-name="Albanian" data-code="sq" data-acc="84.30" data-zero="67.6" data-gap="16.7" data-family="Other"/>
+<rect class="lc-bar" x="230.4" y="183.0" width="8.9" height="73.0" rx="1.5" fill="#4a7fb5" data-name="Icelandic" data-code="is" data-acc="82.48" data-zero="66.7" data-gap="15.8" data-family="Germanic"/>
+<rect class="lc-bar" x="243.9" y="185.9" width="8.9" height="70.1" rx="1.5" fill="#ff6d3a" data-name="Telugu" data-code="te" data-acc="83.36" data-zero="68.2" data-gap="15.2" data-family="Dravidian"/>
+<rect class="lc-bar" x="257.3" y="185.9" width="8.9" height="70.1" rx="1.5" fill="#ff6d3a" data-name="Arabic" data-code="ar" data-acc="77.94" data-zero="62.8" data-gap="15.1" data-family="Semitic"/>
+<rect class="lc-bar" x="270.8" y="186.3" width="8.9" height="69.7" rx="1.5" fill="#ff6d3a" data-name="Khmer" data-code="km" data-acc="76.36" data-zero="61.3" data-gap="15.1" data-family="SE Asian"/>
+<rect class="lc-bar" x="284.2" y="186.8" width="8.9" height="69.2" rx="1.5" fill="#ff6d3a" data-name="Latvian" data-code="lv" data-acc="84.16" data-zero="69.2" data-gap="15.0" data-family="Baltic"/>
+<rect class="lc-bar" x="297.6" y="187.2" width="8.9" height="68.8" rx="1.5" fill="#ff6d3a" data-name="Slovenian" data-code="sl" data-acc="84.36" data-zero="69.5" data-gap="14.9" data-family="Slavic"/>
+<rect class="lc-bar" x="311.1" y="191.2" width="8.9" height="64.8" rx="1.5" fill="#ff6d3a" data-name="Azerbaijani" data-code="az" data-acc="84.90" data-zero="70.9" data-gap="14.0" data-family="Turkic"/>
+<rect class="lc-bar" x="324.5" y="191.6" width="8.9" height="64.4" rx="1.5" fill="#ff6d3a" data-name="Tamil" data-code="ta" data-acc="82.01" data-zero="68.1" data-gap="13.9" data-family="Dravidian"/>
+<rect class="lc-bar" x="338.0" y="193.2" width="8.9" height="62.8" rx="1.5" fill="#ff6d3a" data-name="Burmese" data-code="my" data-acc="81.17" data-zero="67.6" data-gap="13.6" data-family="SE Asian"/>
+<rect class="lc-bar" x="351.4" y="196.4" width="8.9" height="59.6" rx="1.5" fill="#ff6d3a" data-name="Malayalam" data-code="ml" data-acc="82.99" data-zero="70.1" data-gap="12.9" data-family="Dravidian"/>
+<rect class="lc-bar" x="364.8" y="201.4" width="8.9" height="54.6" rx="1.5" fill="#4a7fb5" data-name="Afrikaans" data-code="af" data-acc="83.49" data-zero="71.7" data-gap="11.8" data-family="Germanic"/>
+<rect class="lc-bar" x="378.3" y="206.1" width="8.9" height="49.9" rx="1.5" fill="#ff6d3a" data-name="Armenian" data-code="hy" data-acc="82.38" data-zero="71.6" data-gap="10.8" data-family="Other"/>
+<rect class="lc-bar" x="391.7" y="208.3" width="8.9" height="47.7" rx="1.5" fill="#ff6d3a" data-name="Hindi" data-code="hi" data-acc="85.10" data-zero="74.8" data-gap="10.3" data-family="Indo-Iranian"/>
+<rect class="lc-bar" x="405.2" y="211.0" width="8.9" height="45.0" rx="1.5" fill="#ff6d3a" data-name="Hebrew" data-code="he" data-acc="82.92" data-zero="73.2" data-gap="9.7" data-family="Semitic"/>
+<rect class="lc-bar" x="418.6" y="212.2" width="8.9" height="43.8" rx="1.5" fill="#ff6d3a" data-name="Greek" data-code="el" data-acc="83.46" data-zero="74.0" data-gap="9.5" data-family="Hellenic"/>
+<rect class="lc-bar" x="432.0" y="218.5" width="8.9" height="37.5" rx="1.5" fill="#ff6d3a" data-name="Hungarian" data-code="hu" data-acc="85.21" data-zero="77.1" data-gap="8.1" data-family="Uralic"/>
+<rect class="lc-bar" x="445.5" y="218.7" width="8.9" height="37.3" rx="1.5" fill="#ff6d3a" data-name="Malay" data-code="ms" data-acc="84.77" data-zero="76.7" data-gap="8.1" data-family="SE Asian"/>
+<rect class="lc-bar" x="458.9" y="219.8" width="8.9" height="36.2" rx="1.5" fill="#4a7fb5" data-name="Italian" data-code="it" data-acc="84.23" data-zero="76.4" data-gap="7.8" data-family="Romance"/>
+<rect class="lc-bar" x="472.4" y="221.3" width="8.9" height="34.7" rx="1.5" fill="#ff6d3a" data-name="Korean" data-code="ko" data-acc="84.50" data-zero="77.0" data-gap="7.5" data-family="East Asian"/>
+<rect class="lc-bar" x="485.8" y="227.3" width="8.9" height="28.7" rx="1.5" fill="#ff6d3a" data-name="Turkish" data-code="tr" data-acc="84.60" data-zero="78.4" data-gap="6.2" data-family="Turkic"/>
+<rect class="lc-bar" x="499.2" y="228.7" width="8.9" height="27.3" rx="1.5" fill="#4a7fb5" data-name="German" data-code="de" data-acc="83.49" data-zero="77.6" data-gap="5.9" data-family="Germanic"/>
+<rect class="lc-bar" x="512.7" y="229.3" width="8.9" height="26.7" rx="1.5" fill="#4a7fb5" data-name="Spanish" data-code="es" data-acc="84.57" data-zero="78.8" data-gap="5.8" data-family="Romance"/>
+<rect class="lc-bar" x="526.1" y="229.7" width="8.9" height="26.3" rx="1.5" fill="#4a7fb5" data-name="French" data-code="fr" data-acc="86.48" data-zero="80.8" data-gap="5.7" data-family="Romance"/>
+<rect class="lc-bar" x="539.6" y="230.7" width="8.9" height="25.3" rx="1.5" fill="#4a7fb5" data-name="Portuguese" data-code="pt" data-acc="84.97" data-zero="79.5" data-gap="5.5" data-family="Romance"/>
+<rect class="lc-bar" x="553.0" y="233.4" width="8.9" height="22.6" rx="1.5" fill="#ff6d3a" data-name="Thai" data-code="th" data-acc="82.28" data-zero="77.4" data-gap="4.9" data-family="SE Asian"/>
+<rect class="lc-bar" x="566.4" y="234.1" width="8.9" height="21.9" rx="1.5" fill="#ff6d3a" data-name="Polish" data-code="pl" data-acc="85.44" data-zero="80.7" data-gap="4.7" data-family="Slavic"/>
+<rect class="lc-bar" x="579.9" y="236.1" width="8.9" height="19.9" rx="1.5" fill="#ff6d3a" data-name="Russian" data-code="ru" data-acc="85.61" data-zero="81.3" data-gap="4.3" data-family="Slavic"/>
+<rect class="lc-bar" x="593.3" y="236.2" width="8.9" height="19.8" rx="1.5" fill="#ff6d3a" data-name="Persian" data-code="fa" data-acc="85.37" data-zero="81.1" data-gap="4.3" data-family="Indo-Iranian"/>
+<rect class="lc-bar" x="606.8" y="236.6" width="8.9" height="19.4" rx="1.5" fill="#ff6d3a" data-name="Vietnamese" data-code="vi" data-acc="83.39" data-zero="79.2" data-gap="4.2" data-family="SE Asian"/>
+<rect class="lc-bar" x="620.2" y="236.8" width="8.9" height="19.2" rx="1.5" fill="#ff6d3a" data-name="Finnish" data-code="fi" data-acc="84.36" data-zero="80.2" data-gap="4.2" data-family="Uralic"/>
+<rect class="lc-bar" x="633.6" y="239.2" width="8.9" height="16.8" rx="1.5" fill="#4a7fb5" data-name="Romanian" data-code="ro" data-acc="84.43" data-zero="80.8" data-gap="3.6" data-family="Romance"/>
+<rect class="lc-bar" x="647.1" y="243.2" width="8.9" height="12.8" rx="1.5" fill="#4a7fb5" data-name="Dutch" data-code="nl" data-acc="84.87" data-zero="82.1" data-gap="2.8" data-family="Germanic"/>
+<rect class="lc-bar" x="660.5" y="247.5" width="8.9" height="8.5" rx="1.5" fill="#ff6d3a" data-name="Indonesian" data-code="id" data-acc="84.94" data-zero="83.1" data-gap="1.8" data-family="SE Asian"/>
+<rect class="lc-bar" x="674.0" y="249.2" width="8.9" height="6.8" rx="1.5" fill="#4a7fb5" data-name="Danish" data-code="da" data-acc="84.57" data-zero="83.1" data-gap="1.5" data-family="Germanic"/>
+<rect class="lc-bar" x="687.4" y="252.9" width="8.9" height="3.1" rx="1.5" fill="#4a7fb5" data-name="Norwegian" data-code="nb" data-acc="84.26" data-zero="83.6" data-gap="0.7" data-family="Germanic"/>
+<rect class="lc-bar" x="700.8" y="256.0" width="8.9" height="1.5" rx="1.5" fill="#4a7fb5" data-name="Swedish" data-code="sv" data-acc="85.21" data-zero="85.2" data-gap="0.0" data-family="Germanic"/>
+<line x1="40" y1="197.5" x2="712" y2="197.5" stroke="#20d49a" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="710" y="191.5" class="lc-ref" fill="#20d49a" text-anchor="end">mean +12.6 points</text>
+<text x="50.7" y="61.2" class="lc-callout" fill="#ff6d3a" text-anchor="start">Japanese +40</text>
+<line x1="705.3" y1="230.0" x2="705.3" y2="255.0" stroke="#4a7fb5" stroke-width="1" opacity="0.5"/>
+<text x="701.3" y="226.0" class="lc-callout" fill="#4a7fb5" text-anchor="end">Swedish +0</text>
+<text x="40" y="276" class="lc-axis">50 non-English languages, ranked by advantage</text>
+<text x="712" y="276" class="lc-axis" text-anchor="end">we win 50 of 50</text>
+<text x="40" y="292" class="lc-axis lc-sub">points of accuracy, ours minus XLM-R trained on English only</text>
+</svg>
+<figcaption>
+  The result that matters if you do not speak English. Train XLM-R on English, point it
+  at the other 50 languages, and it works well for the languages nearest English and
+  falls apart for the ones furthest away. A small head trained on the language itself
+  wins in <strong>all 50</strong>, by <strong>12.6 points</strong> on average.
+  Swedish gains nothing from it. Japanese gains 40 points. Hover or tap any bar
+  <span class="lc-prov">MASSIVE intent &middot; 60 classes &middot; ours is frozen LaBSE + logistic
+  regression per language &middot; XLM-R zero-shot figures from the MASSIVE paper
+  &middot; <a href="https://github.com/nicobrenner/jeffy/blob/main/data/eval_results/training_results.csv">training_results.csv</a></span>
+</figcaption>
+</figure>
+
 
 <p>
   To be straight about it: our heads get labels in the target language and the zero-shot baseline doesn't. That's not me hiding the catch, that <em>is</em> the argument. Those labels cost an afternoon
@@ -931,6 +1098,9 @@ fetch("https://api.github.com/repos/nicobrenner/jeffy")
   // window and let the flock react to where the reader actually is.
   var ptr = { x: -9999, y: -9999, down: false, downAt: 0, active: false };
 
+  // smoothstep: no sudden start or stop at either end of a phase
+  function ease(t) { return t * t * (3 - 2 * t); }
+
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     w = window.innerWidth;
@@ -1009,8 +1179,8 @@ fetch("https://api.github.com/repos/nicobrenner/jeffy")
       if (d2 < 520) { sepX -= dx / d2 * 18; sepY -= dy / d2 * 18; }
     }
     if (n) {
-      b.vx += ((cohX / n) - b.x) * 0.0006 + ((aliX / n) - b.vx) * 0.02 + sepX * 0.02;
-      b.vy += ((cohY / n) - b.y) * 0.0006 + ((aliY / n) - b.vy) * 0.02 + sepY * 0.02;
+      b.vx += ((cohX / n) - b.x) * 0.0004 + ((aliX / n) - b.vx) * 0.013 + sepX * 0.012;
+      b.vy += ((cohY / n) - b.y) * 0.0004 + ((aliY / n) - b.vy) * 0.013 + sepY * 0.012;
     }
     // drift back toward the middle instead of wrapping, which looks less mechanical
     b.vx += (w / 2 - b.x) * 0.00012;
@@ -1023,12 +1193,12 @@ fetch("https://api.github.com/repos/nicobrenner/jeffy")
         // held: a weak attractor, so the flock gathers toward the finger
         if (pd2 > 400 && pd2 < 360000) {
           var pd = Math.sqrt(pd2);
-          b.vx -= pdx / pd * 0.16;
-          b.vy -= pdy / pd * 0.16;
+          b.vx -= pdx / pd * 0.09;
+          b.vy -= pdy / pd * 0.09;
         }
       } else if (pd2 < 8100 && pd2 > 1) {
         // near the cursor: steer away, strongest closest in
-        var f = (8100 - pd2) / 8100 * 1.5;
+        var f = (8100 - pd2) / 8100 * 0.7;
         var d = Math.sqrt(pd2);
         b.vx += pdx / d * f;
         b.vy += pdy / d * f;
@@ -1041,7 +1211,7 @@ fetch("https://api.github.com/repos/nicobrenner/jeffy")
     requestAnimationFrame(tick);
 
     var elapsed = now - phaseAt;
-    if (phase === "free" && elapsed > 7000) {
+    if (phase === "free" && elapsed > 13000) {
       var next = wordIndex;
       while (WORDS.length > 1 && next === wordIndex) next = (Math.random() * WORDS.length) | 0;
       wordIndex = next;
@@ -1055,9 +1225,9 @@ fetch("https://api.github.com/repos/nicobrenner/jeffy")
         for (var i = 0; i < boids.length; i++) { boids[i].tx = targets[i].x; boids[i].ty = targets[i].y; }
         phase = "gather"; phaseAt = now;
       } else { phaseAt = now; }
-    } else if (phase === "gather" && elapsed > 2600) { phase = "hold"; phaseAt = now; }
-    else if (phase === "hold" && elapsed > 3400) { phase = "release"; phaseAt = now; }
-    else if (phase === "release" && elapsed > 2600) { phase = "free"; targets = null; phaseAt = now; }
+    } else if (phase === "gather" && elapsed > 4200) { phase = "hold"; phaseAt = now; }
+    else if (phase === "hold" && elapsed > 6000) { phase = "release"; phaseAt = now; }
+    else if (phase === "release" && elapsed > 4000) { phase = "free"; targets = null; phaseAt = now; }
 
     window.__flockPhase = phase;
     ctx.clearRect(0, 0, w, h);
@@ -1068,28 +1238,28 @@ fetch("https://api.github.com/repos/nicobrenner/jeffy")
       // the flock eases into the glyphs, keeps circulating inside them, then
       // the pull fades and ordinary flocking takes back over.
       var pull = 0;
-      if (phase === "gather") pull = 0.055 * Math.min(1, elapsed / 1400);
-      else if (phase === "hold") pull = 0.055;
-      else if (phase === "release") pull = 0.055 * Math.max(0, 1 - elapsed / 1600);
+      if (phase === "gather") pull = 0.045 * ease(Math.min(1, elapsed / 3000));
+      else if (phase === "hold") pull = 0.045;
+      else if (phase === "release") pull = 0.045 * (1 - ease(Math.min(1, elapsed / 2800)));
 
       if (pull > 0) {
         b.vx += (b.tx - b.x) * pull;
         b.vy += (b.ty - b.y) * pull;
         // keep each bird orbiting its own spot so the word breathes instead of
         // freezing: a slow circle plus a little noise, per boid phase offset
-        var orb = phase === "hold" ? 0.16 : 0.11;
-        b.vx += Math.cos(now * 0.0016 + b.ph) * orb;
-        b.vy += Math.sin(now * 0.0019 + b.ph) * orb;
-        b.vx *= 0.90; b.vy *= 0.90;
+        var orb = phase === "hold" ? 0.085 : 0.06;
+        b.vx += Math.cos(now * 0.00075 + b.ph) * orb;
+        b.vy += Math.sin(now * 0.00089 + b.ph) * orb;
+        b.vx *= 0.93; b.vy *= 0.93;
       }
-      if (pull < 0.055) {
+      if (pull < 0.045) {
         // flocking fades in as the pull fades out, so there is no seam
         flockStep(b);
       }
-      var cap = 2.2;
+      var cap = 1.05;
       var sp = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
       if (sp > cap) { b.vx = b.vx / sp * cap; b.vy = b.vy / sp * cap; }
-      if (sp < 0.2 && pull === 0) { b.vx += (Math.random() - 0.5) * 0.3; b.vy += (Math.random() - 0.5) * 0.3; }
+      if (sp < 0.1 && pull === 0) { b.vx += (Math.random() - 0.5) * 0.14; b.vy += (Math.random() - 0.5) * 0.14; }
 
       b.x += b.vx; b.y += b.vy;
       if (b.x < -30) b.x = w + 30; if (b.x > w + 30) b.x = -30;
@@ -1152,5 +1322,71 @@ fetch("https://api.github.com/repos/nicobrenner/jeffy")
 })();
 </script>
 
+
+<div id="lc-tip" role="tooltip" aria-hidden="true"></div>
+<script>
+// Tooltips for the two language charts. One delegated handler for both, so a
+// bar works the same under a mouse and under a finger. SVG <title> alone is
+// desktop-only, slow to appear, and unreadable on a phone.
+(function () {
+  var tip = document.getElementById("lc-tip");
+  if (!tip) return;
+  var pinned = null;
+
+  function html(d) {
+    var rows = [];
+    rows.push("<b>" + d.name + "</b> <span class='t-sub'>" + d.code + "</span>");
+    if (d.gap !== undefined) {
+      rows.push("ours <b>" + d.acc + "%</b>");
+      rows.push("<span class='t-sub'>XLM-R, English only: " + d.zero + "%</span>");
+      rows.push("advantage <b>+" + d.gap + "</b> points");
+    } else {
+      rows.push("<b>" + d.acc + "%</b> <span class='t-sub'>rank " + d.rank + " of " + d.n + "</span>");
+      rows.push("<span class='t-sub'>fine-tuned XLM-R: " + d.xlmr + "%</span>");
+    }
+    if (d.family) rows.push("<span class='t-sub'>" + d.family + "</span>");
+    return rows.join("<br>");
+  }
+
+  function show(bar, x, y) {
+    tip.innerHTML = html(bar.dataset);
+    tip.classList.add("on");
+    tip.setAttribute("aria-hidden", "false");
+    var r = tip.getBoundingClientRect();
+    // keep it on screen: flip above the finger, and clamp to both side edges
+    var left = Math.min(Math.max(8, x - r.width / 2), window.innerWidth - r.width - 8);
+    var top = y - r.height - 14;
+    if (top < 8) top = y + 18;
+    tip.style.left = left + "px";
+    tip.style.top = top + "px";
+  }
+
+  function hide() {
+    tip.classList.remove("on");
+    tip.setAttribute("aria-hidden", "true");
+    pinned = null;
+  }
+
+  document.addEventListener("pointermove", function (e) {
+    if (pinned || e.pointerType === "touch") return;
+    var bar = e.target.closest && e.target.closest(".lc-bar");
+    if (bar) show(bar, e.clientX, e.clientY);
+    else if (tip.classList.contains("on")) hide();
+  }, { passive: true });
+
+  // Tap to pin, tap again (or anywhere else) to dismiss. Runs on every pointer
+  // type so a mouse click pins too, which helps anyone who cannot hover steadily.
+  document.addEventListener("pointerdown", function (e) {
+    var bar = e.target.closest && e.target.closest(".lc-bar");
+    if (!bar) { if (pinned) hide(); return; }
+    if (pinned === bar) { hide(); return; }
+    pinned = bar;
+    var r = bar.getBoundingClientRect();
+    show(bar, r.left + r.width / 2, r.top);
+  }, { passive: true });
+
+  window.addEventListener("scroll", function () { if (pinned) hide(); }, { passive: true });
+})();
+</script>
 </body>
 </html>
