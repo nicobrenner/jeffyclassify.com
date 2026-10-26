@@ -1,0 +1,21 @@
+{
+  "out": "blog/polish-guy-was-right/og.png",
+  "title": ["The Polish Guy", "Was Right"],
+  "subtitle": "51 languages, one frozen encoder, no GPU, no fine-tuning",
+  "accent": "#ff6d3a",
+  "kpis": [
+    {"value": "83.3%", "caption": "mean, 51 languages", "color": "orange"},
+    {"value": "#4", "caption": "Polish, of 51", "color": "accent"}
+  ],
+  "bars": [
+    {"label": "French",  "value": 0.8648, "display": "86.5%", "color": "dim"},
+    {"label": "English", "value": 0.8608, "display": "86.1%", "color": "accent"},
+    {"label": "Polish",  "value": 0.8544, "display": "85.4%", "color": "orange"},
+    {"label": "German",  "value": 0.8349, "display": "83.5%", "color": "dim"},
+    {"label": "Arabic",  "value": 0.7794, "display": "77.9%", "color": "dim"},
+    {"label": "Khmer",   "value": 0.7636, "display": "76.4%", "color": "dim"}
+  ],
+  "bar_range": [0.74, 0.875],
+  "bar_note": "MASSIVE intent, 60 classes. Axis starts at 74%",
+  "footer_right": "frozen LaBSE + logistic regression"
+}
